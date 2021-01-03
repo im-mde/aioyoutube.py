@@ -1,0 +1,5 @@
+*.py[cod]
+.env
+.vscode/
+__py_cache__/
+test.py
