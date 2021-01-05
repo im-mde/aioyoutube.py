@@ -7,30 +7,35 @@ from dotenv import load_dotenv
 load_dotenv()
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
 
-# outputs json result of a search to the YouTubeAPIClient
-async def search_youtube(client: YouTubeAPIClient, search_term: str, **kwargs):
-    print(await client.search(search_term=search_term, **kwargs))
-    print('\nYouTube search complete for {}\n'.format(search_term))
-
-# concurrently makes a search request for different search terms
+# concurrently running tasks searching different search terms from user input
 async def search(loop, search_terms: list):
-    client = YouTubeAPIClient(key=YOUTUBE_API_KEY)
+    client = await YouTubeAPIClient.from_connect(YOUTUBE_API_KEY)
+
     tasks = []
-    
     for search_term in search_terms:
-        tasks.append(loop.create_task(search_youtube(client=client, search_term=search_term)))
+        tasks.append(loop.create_task(client.search(search_term=search_term)))
 
     await asyncio.gather(*tasks, loop=loop)
+
+    for i, task in enumerate(tasks):
+        print('\nResults for "{}":\n'.format(search_terms[i]))
+        for video in task.result()['items']:
+            print('\t{}'.format(video['snippet']['title']))
+    print('\nYouTube Results Completed.\n')
+    
     await client.close_session()
 
 if __name__ == '__main__':
-    amount = 0
+    print('\nExecuting Youtube Search Program.\n')
+
+    # search amount limited to avoid reaching api quota
+    amount = 0    
     while amount > 5 or amount <= 0:
-        amount = int(input('\nEnter amount of YouTube searches you want [1-5]: '))
+        amount = int(input('Enter amount of YouTube searches you want [1-5]: '))
 
     search_terms = []
     for i in range(amount):
-        search_terms.append(input('Search {}: '.format(i + 1)))
+        search_terms.append(input('\nSearch {}: '.format(i + 1)))
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(search(loop, search_terms))
