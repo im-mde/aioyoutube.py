@@ -1,7 +1,14 @@
 from asyncio import AbstractEventLoop
 from aiohttp import ClientSession
 from aioyoutube.http import YouTubeAPISession
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
 import asyncio
+import json
+
+API_SERVICE_NAME = 'youtube'
+API_VERSION = 'v3'
+VALID_RATINGS = {'like', 'dislike', 'none'}
 
 def parse_kind(kind):
     if 'youtube#' in kind:
@@ -15,9 +22,11 @@ def parse_kind(kind):
     else:
         raise TypeError
 
-def build_endpoint(query_type: str, part: list, key: str, **kwargs):
-    part = ','.join(part)
-    endpoint = '{}?part={}'.format(query_type, part)
+def build_endpoint(query_type: str, key: str, part: list = [], **kwargs):
+    endpoint = '{}?'.format(query_type)
+    if len(part) > 0:
+        part = ','.join(part)
+        endpoint = '{}?part={}'.format(query_type, part)
     
     for key_, value in kwargs.items():
         endpoint += '&{}={}'.format(key_, str(value))
@@ -49,10 +58,40 @@ class YouTubeAPIClient:
             close_session ret(None): closes the http session
     """
 
-    def __init__(self, key: str, loop: AbstractEventLoop = None, session: YouTubeAPISession = None):
+    QUOTA_LIMIT = 10000
+
+    def __init__(self, key: str):
         self.key = key
+        self.loop = None
+        self.session = None
+        self.credentials = None
+        self.service = None
+
+    async def connect(self, session: YouTubeAPISession = None, loop: AbstractEventLoop = None):
+        self.session = session or YouTubeAPISession(loop=loop)
         self.loop = loop or asyncio.get_event_loop()
-        self.session = session or YouTubeAPISession()
+
+    async def authenticate_from_console(self, client_secret_file: str, scopes: list, **kwargs):
+        self.flow = InstalledAppFlow.from_client_secrets_file(client_secret_file, scopes, **kwargs)
+        self.credentials = self.flow.run_console()
+        self.service = build(API_SERVICE_NAME, API_VERSION, credentials=self.credentials)
+
+    @classmethod
+    async def from_connect(cls, key: str, session: YouTubeAPISession = None, loop: AbstractEventLoop = None):
+        class_ = cls(key)
+        class_.loop = loop or asyncio.get_event_loop()
+        class_.session = session or YouTubeAPISession(loop=loop)
+        class_.credentials = None
+        return class_
+
+    async def rate(self, video_id: str, rating: str):
+        if rating not in VALID_RATINGS:
+            raise ValueError('rating argument must be one of %r' % VALID_RATINGS)
+
+        endpoint = build_endpoint('videos/rate', self.key, part=[], id=id, rating=rating)
+
+        return await self.session.post(endpoint=endpoint, headers={
+            'Authorization': 'Bearer {}'.format(self.credentials.token)})
 
     async def search(self, search_term: str, json: bool = True, **kwargs):
         return await self.itemize(kind='search', part=['snippet'], 
@@ -70,14 +109,17 @@ class YouTubeAPIClient:
 
     # replaces "list" from api documentation due to it being a python keyword
     async def itemize(self, kind, part: list, json: bool = True, **kwargs):
-        query_type = parse_kind(kind)
-        endpoint = build_endpoint(query_type, part, self.key, **kwargs)
-        result = await self.session.get(endpoint=endpoint)
-        
-        if not json:
-            pass
+        if self.session == None:
+            raise Exception
         else:
-            return await result.json()
+            query_type = parse_kind(kind)
+            endpoint = build_endpoint(query_type, self.key, part, **kwargs)
+            result = await self.session.get(endpoint=endpoint)
+            
+            if not json:
+                pass
+            else:
+                return await result.json()
 
     async def download(self, part = None, **kwargs):
         NotImplemented
