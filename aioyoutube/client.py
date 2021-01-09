@@ -11,6 +11,10 @@ API_VERSION = 'v3'
 VALID_RATINGS = {'like', 'dislike', 'none'}
 
 def parse_kind(kind):
+    # TODO: clean up the function
+    if kind[-1] == 'y':
+        kind = kind[0:-1] + 'ies'
+
     if 'youtube#' in kind:
         if kind[-1] != 's' and kind != 'search': 
             kind += 's'
@@ -32,6 +36,30 @@ def build_endpoint(query_type: str, key: str, part: list = [], **kwargs):
         endpoint += '&{}={}'.format(key_, str(value))
     
     return endpoint + '&key={}'.format(key)
+
+def build_data(**kwargs):
+    # TODO: cleanup whatever parsing mess this is supposed to be lol
+
+    data = {}
+    for key_, value, in kwargs.items():
+        if '_' in key_:
+            split = key_.split('_')
+            dict_str = ''
+            for i, key__ in enumerate(split):
+                if i + 1 == len(split):
+                    dict_str = "{{'{}':'{}'}}".format(key__, value)
+                    try:
+                        data[split[i-1]].update(eval(dict_str))
+                    except:
+                        data.update(eval(dict_str))
+                else:
+                    if key__ not in data.keys():
+                        dict_str = "{{'{}':{{}}}}".format(key__)
+                        data.update(eval(dict_str))
+            
+        else:
+            data.update({key_: value})
+    return data
 
 class YouTubeAPIClient:
 
@@ -93,36 +121,57 @@ class YouTubeAPIClient:
         return await self.session.post(endpoint=endpoint, headers={
             'Authorization': 'Bearer {}'.format(self.credentials.token)})
 
-    async def search(self, search_term: str, json: bool = True, **kwargs):
+    async def search(self, search_term: str, **kwargs):
         return await self.itemize(kind='search', part=['snippet'], 
-            json=json, q=search_term, **kwargs
+            q=search_term, **kwargs
         )        
 
-    async def insert(self, body, part = None, **kwargs):
-        NotImplemented
+    async def insert(self, kind: str, part: list = [], **kwargs):
+        query_type = parse_kind(kind)
+        endpoint = build_endpoint(query_type=query_type, key=self.key, part=part)
+        data = build_data(**kwargs)
+        print(data)
 
-    async def delete(self, body, part = None, **kwargs):
-        NotImplemented
+        result = await self.session.put(endpoint=endpoint, data=data,
+            headers={'Authorization': 'Bearer {}'.format(self.credentials.token),
+                'Content-Type': 'application/octet-stream'})
+        return await result.json()
 
-    async def update(self, body, part = None, **kwargs):
-        NotImplemented
+    async def delete(self, kind: str, id: str, **kwargs):
+        query_type = parse_kind(kind)
+        endpoint = build_endpoint(query_type=query_type, key=self.key, id=id)
+
+        result = await self.session.delete(endpoint=endpoint, 
+            headers={'Authorization': 'Bearer {}'.format(self.credentials.token)})
+        return await result.json()
+
+    async def update(self, kind, part: list = [], **kwargs):
+        query_type = parse_kind(kind)
+        endpoint = build_endpoint(query_type=query_type, key=self.key, part=part)
+        data = build_data(**kwargs)
+
+        result = await self.session.put(endpoint=endpoint, data=json.dumps(data), 
+            headers={'Authorization': 'Bearer {}'.format(self.credentials.token),
+                'Content-Type': 'application/json'})
+        return await result.json()
 
     # replaces "list" from api documentation due to it being a python keyword
-    async def itemize(self, kind, part: list, json: bool = True, **kwargs):
+    async def itemize(self, kind, part: list, **kwargs):
         if self.session == None:
             raise Exception
         else:
             query_type = parse_kind(kind)
             endpoint = build_endpoint(query_type, self.key, part, **kwargs)
             result = await self.session.get(endpoint=endpoint)
-            
-            if not json:
-                pass
-            else:
-                return await result.json()
+            return await result.json()
 
-    async def download(self, part = None, **kwargs):
-        NotImplemented
+    async def download(self, kind: str, id: str, **kwargs):
+        query_type = parse_kind(kind)
+        endpoint = build_endpoint(query_type=query_type, key=self.key, **kwargs)
+
+        result = await self.session.get(endpoint=endpoint, id=id, **kwargs,
+            headers={'Authorization': 'Bearer {}'.format(self.credentials.token)})
+        return await result.json()
     
     async def close_session(self):
         await self.session.close()

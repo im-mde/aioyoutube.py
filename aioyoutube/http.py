@@ -37,20 +37,20 @@ class YouTubeAPISession(ClientSession):
     def put(self, endpoint: StrOrURL, *, data: Any = None, **kwargs: Any):
         try:
             url = self.base_url + endpoint
-            super().put(url=url, data=data, **kwargs)
+            return super().put(url=url, data=data, **kwargs)
         except:
-            super().put(url=endpoint, data=data, **kwargs)
+            return super().put(url=endpoint, data=data, **kwargs)
     
     def post(self, endpoint: StrOrURL, * , data: Any = None, **kwargs: Any):
         try:
             url = self.base_url + endpoint
-            super().post(url=url, data=data, **kwargs)
+            return super().post(url=url, data=data, **kwargs)
         except:
-            super().post(url=endpoint, data=data, **kwargs)
+            return super().post(url=endpoint, data=data, **kwargs)
 
     def delete(self, endpoint: StrOrURL, **kwargs: Any):
         try:
             url = self.base_url + endpoint
-            super().delete(url=url, **kwargs)
+            return super().delete(url=url, **kwargs)
         except:
-            super().post(url=endpoint, **kwargs)
+            return super().post(url=endpoint, **kwargs)
