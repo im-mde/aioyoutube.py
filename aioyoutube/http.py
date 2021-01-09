@@ -4,6 +4,8 @@ from aiohttp.typedefs import StrOrURL
 
 BASE_URL = 'https://www.googleapis.com/youtube/v3/'
 
+# TODO: Implement this class w/o inheriting ClientSession. It's recommended not to in favor 
+#       of including a ClienSession object within your custom client class
 class YouTubeAPISession(ClientSession):
 
     """
