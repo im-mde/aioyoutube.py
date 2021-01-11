@@ -1,6 +1,7 @@
 from typing import Any
 from aiohttp import ClientSession
 from aiohttp.typedefs import StrOrURL
+from aiohttp.client_exceptions import InvalidURL
 
 BASE_URL = 'https://www.googleapis.com/youtube/v3/'
 
@@ -30,29 +31,29 @@ class YouTubeAPISession(ClientSession):
         super().__init__(**kwargs)
 
     def get(self, endpoint: StrOrURL, *, allow_redirects: bool = True, **kwargs):
-        try:
+        if BASE_URL not in endpoint:
             url = self.base_url + endpoint
             return super().get(url=url, allow_redirects=allow_redirects, **kwargs)
-        except:
+        elif BASE_URL in endpoint:
             return super().get(url=endpoint, allow_redirects=allow_redirects, **kwargs)
-
+        
     def put(self, endpoint: StrOrURL, *, data: Any = None, **kwargs: Any):
-        try:
+        if BASE_URL not in endpoint:
             url = self.base_url + endpoint
             return super().put(url=url, data=data, **kwargs)
-        except:
-            return super().put(url=endpoint, data=data, **kwargs)
-    
+        elif BASE_URL in endpoint:
+            return super().put(url=endpoint, data=data)
+
     def post(self, endpoint: StrOrURL, * , data: Any = None, **kwargs: Any):
-        try:
+        if BASE_URL not in endpoint:
             url = self.base_url + endpoint
             return super().post(url=url, data=data, **kwargs)
-        except:
+        elif BASE_URL in endpoint:
             return super().post(url=endpoint, data=data, **kwargs)
 
     def delete(self, endpoint: StrOrURL, **kwargs: Any):
-        try:
+        if BASE_URL not in endpoint:
             url = self.base_url + endpoint
             return super().delete(url=url, **kwargs)
-        except:
+        elif BASE_URL in endpoint:
             return super().post(url=endpoint, **kwargs)
