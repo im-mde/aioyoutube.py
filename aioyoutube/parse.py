@@ -1,18 +1,20 @@
+from .valid import KINDS
+
 def parse_kind(kind):
     # TODO: clean up the function
-    if kind[-1] == 'y':
-        kind = kind[0:-1] + 'ies'
-
+    
+    kind = kind
     if 'youtube#' in kind:
-        if kind[-1] != 's' and kind != 'search': 
-            kind += 's'
-        return kind.split('#')[1]
-    elif type(kind) == str:
-        if kind[-1] != 's' and kind != 'search':
-            kind += 's'
-        return kind
+        kind = kind.split('#')[1]
+
+    if kind not in KINDS:
+        raise ValueError('Kind argument must be one of: %r' % KINDS)
+    if kind[-1] == 'y':
+        return kind[0:-1] + 'ies'
+    elif kind != 'search':
+        return kind + 's'
     else:
-        raise TypeError
+        return kind
 
 def build_endpoint(query_type: str, key: str, part: list = [], **kwargs):
     endpoint = '{}?'.format(query_type)

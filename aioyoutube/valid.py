@@ -12,7 +12,7 @@ KINDS = frozenset({
   'membershipLevel',
   'member',
   'i18nRegion',
-  '118nLanguage',
+  'i18nLanguage',
   'commentThread',
   'comment',
   'channelSection',
