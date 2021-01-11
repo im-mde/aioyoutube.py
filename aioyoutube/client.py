@@ -1,15 +1,16 @@
 from asyncio import AbstractEventLoop
 from aiohttp import ClientSession
-from aioyoutube.http import YouTubeAPISession
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from .parse import *
+from google_auth_oauthlib.flow import InstalledAppFlow
 import asyncio
 import json
 
+from .http import YouTubeAPISession
+from .parse import build_data, build_endpoint, parse_kind
+from .valid import *
+
 API_SERVICE_NAME = 'youtube'
 API_VERSION = 'v3'
-VALID_RATINGS = {'like', 'dislike', 'none'}
 
 class YouTubeAPIClient:
 
@@ -63,16 +64,19 @@ class YouTubeAPIClient:
         return class_
 
     async def rate(self, video_id: str, rating: str):
-        if rating not in VALID_RATINGS:
-            raise ValueError('rating argument must be one of %r' % VALID_RATINGS)
+        if rating not in RATINGS:
+            raise ValueError('rating argument must be one of %r' % RATINGS)
 
         endpoint = build_endpoint('videos/rate', self.key, part=[], id=id, rating=rating)
 
         return await self.session.post(endpoint=endpoint, headers={
             'Authorization': 'Bearer {}'.format(self.credentials.token)})
 
+    async def set_(self):
+        NotImplemented
+
     async def search(self, search_term: str, **kwargs):
-        return await self.itemize(kind='search', part=['snippet'], 
+        return await self.list_(kind='search', part=['snippet'], 
             q=search_term, **kwargs
         )        
 
@@ -106,7 +110,7 @@ class YouTubeAPIClient:
         return await result.json()
 
     # replaces "list" from api documentation due to it being a python keyword
-    async def itemize(self, kind, part: list, **kwargs):
+    async def list_(self, kind, part: list, **kwargs):
         if self.session == None:
             raise Exception
         else:
