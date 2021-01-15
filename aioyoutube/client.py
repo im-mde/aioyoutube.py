@@ -13,32 +13,13 @@ API_VERSION = 'v3'
 class YouTubeAPIClient:
 
     """
-        Represents a client object used to interact with the YouTube Data API.
+        Foundational client object used to interact with the YouTube Data API.
 
         Parent(s):
             None
         
         Attribute(s):
-            key typ(str): YouTube API key
-            loop typ(asyncio.AbstractEventLoop): event loop for async operations
-            session typ(aiohttp.ClientSession): async http session
-
-        Method(s):
-            search ret():
-            create ret():
-            delete ret():
-            update ret():    @classmethod
-    async def from_connect(cls, key: str, token: str = None, session: YouTubeAPISession = None, loop: AbstractEventLoop = None):
-        
-        class_ = cls(key, token)
-        class_.loop = loop or asyncio.get_event_loop()
-        class_.session = session or YouTubeAPISession(loop=class_.loop)
-        return class_
-            download ret():
-            rate ret():
-            get_rating ret():
-            report_abuse ret():
-            close_session ret(None): closes the http session
+            key type(str): YouTube API key 
     """
 
     QUOTA_LIMIT = 10000
@@ -85,6 +66,19 @@ class YouTubeAPIClient:
         return await result.json()
 
 class YouTubeBaseClient(YouTubeAPIClient):
+    
+    """
+        Client object for making YouTube API requests w/o an access token.
+        
+        Use this client when you are wanting to access less sensitive data 
+        from the YouTube Data API.
+        
+        Parent(s):
+            YouTubeAPIClient
+        
+        Attribute(s):
+            key type(str): YouTube API key 
+    """
 
     def __init__(self, key: str):
         super().__init__(key)
@@ -98,12 +92,26 @@ class YouTubeBaseClient(YouTubeAPIClient):
     
 class YouTubeAuthClient(YouTubeAPIClient):
 
+    """
+        Client object for making YouTube API requests with an access token.
+        
+        Use this client when you are wanting access to sensitive information
+        and/or implementing actions such as liking a video.
+        
+        Parent(s):
+            YouTubeAPIClient
+        
+        Attribute(s):
+            key type(str): YouTube API key
+            token type(str): Access token
+    """
+
     def __init__(self, key: str, token: str):
         self._token = token
         super().__init__(key)
     
     @classmethod
-    async def from_token_connect(cls, key: str, token:str, session: YouTubeAPISession = None, loop: AbstractEventLoop = None):
+    async def from_token_connect(cls, key: str, token: str, session: YouTubeAPISession = None, loop: AbstractEventLoop = None):
         
         class_ = cls(key, token)
         loop_ = loop or asyncio.get_event_loop()
@@ -182,6 +190,21 @@ class YouTubeAuthClient(YouTubeAPIClient):
         NotImplemented
 
 class YouTubeCrossClient(YouTubeAuthClient, YouTubeBaseClient):
+
+    """
+        Client object for making YouTube API requests with or w/o an access token.
+        
+        Use this client when you need the functionality of the base and authorized
+        client class.
+        
+        Parent(s):
+            YouTubeAuthClient
+            YouTubeBaseClient
+        
+        Attribute(s):
+            key type(str): YouTube API key 
+            token type(str): Access token
+    """
 
     def __init__(self, key: str, token: str):
         super().__init__(key, token)
