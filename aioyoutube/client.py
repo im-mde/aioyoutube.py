@@ -13,8 +13,10 @@ API_VERSION = 'v3'
 class YouTubeAPIClient:
 
     """
-        Foundational client object used to interact with the YouTube Data API.
+        Foundational client object for the YouTube Data API.
 
+        An object of this class should not be directly initialized
+        
         Parent(s):
             None
         
@@ -171,8 +173,10 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
         endpoint = build_endpoint('videos/rate', self._key, part=[], id=id, rating=rating)
 
-        return await self._session.post(endpoint=endpoint, headers={
+        result = await self._session.post(endpoint=endpoint, headers={
             'Authorization': 'Bearer {}'.format(self._token)})
+
+        return await result.json()
 
     async def download(self, kind: str, id: str, **kwargs):
         
@@ -184,7 +188,14 @@ class YouTubeAuthClient(YouTubeAPIClient):
         return await result.json()
 
     async def getRating(self, id: list, **kwargs):
-        NotImplemented
+        
+        endpoint = build_endpoint(query_type='videos/getRating', key=self._key,
+            id=id, **kwargs)
+
+        result = await self._session.get(endpoint=endpoint, 
+            headers={'Authorization': 'Bearer {}'.format(self._token)})
+
+        return await result.json()
 
     async def reportAbuse(self, videoId_: str, reasonId_: str, **kwargs):
         NotImplemented
