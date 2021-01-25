@@ -32,7 +32,7 @@ class YouTubeAPISession(ClientSession):
         super().__init__(**kwargs)
 
     def get(self, endpoint: StrOrURL, *, allow_redirects: bool = True, **kwargs):
-        
+
         if BASE_URL not in endpoint:
             url = self.base_url + endpoint
             return super().get(url=url, allow_redirects=allow_redirects, **kwargs)
@@ -62,3 +62,18 @@ class YouTubeAPISession(ClientSession):
             return super().delete(url=url, **kwargs)
         elif BASE_URL in endpoint:
             return super().post(url=endpoint, **kwargs)
+
+class YouTubeAPIResponse:
+
+    def __init__(self, json: dict, status: int):
+        
+        self._json = json
+        self._status = status
+    
+    @property
+    def json(self):
+        return self._json
+
+    @property
+    def status(self):
+        return self._status
