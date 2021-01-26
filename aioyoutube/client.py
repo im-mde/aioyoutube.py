@@ -4,7 +4,7 @@ import asyncio
 import json
 
 from .http import YouTubeAPISession, YouTubeAPIResponse
-from .parse import build_data, build_endpoint, parse_kind
+from .parse import parse_kind, build_endpoint
 from .valid import RATINGS
 
 API_SERVICE_NAME = 'youtube'
@@ -130,17 +130,12 @@ class YouTubeAuthClient(YouTubeAPIClient):
         self._token = value
 
     # TODO: YET TO BE PROPERLY IMPLEMENTED
-    async def insert(self, kind: str, part: list = [], data: dict = None, **kwargs):
+    async def insert(self, kind: str, data: dict, part: list = [], **kwargs):
         
         query_type = parse_kind(kind)
-        endpoint = build_endpoint(query_type=query_type, key=self._key, part=part)
+        endpoint = build_endpoint(query_type=query_type, key=self._key, part=part, **kwargs)
 
-        data_ = data
-        if data_ == None:
-            data = build_data(**kwargs)
-        print(data)
-
-        result = await self._session.put(endpoint=endpoint, data=data_,
+        result = await self._session.put(endpoint=endpoint, data=data,
             headers={'Authorization': 'Bearer {}'.format(self._token),
                 'Content-Type': 'application/octet-stream'})
         return await result.json()
@@ -157,19 +152,18 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
         return YouTubeAPIResponse(json_, status)
 
-    async def update(self, kind: str, part: list = [], data: dict = None, **kwargs):
+    async def update(self, kind: str, data: dict, part: list = [], **kwargs):
         
         query_type = parse_kind(kind)
-        endpoint = build_endpoint(query_type=query_type, key=self._key, part=part)
+        endpoint = build_endpoint(query_type=query_type, key=self._key, part=part, **kwargs)
         
-        data_ = data
-        if data_ == None:
-            data_ = build_data(**kwargs)
-
-        result = await self._session.put(endpoint=endpoint, data=json.dumps(data_), 
+        result = await self._session.put(endpoint=endpoint, data=json.dumps(data), 
             headers={'Authorization': 'Bearer {}'.format(self._token),
                 'Content-Type': 'application/json'})
-        return await result.json()
+        json_ = await result.json()
+        status = result.status
+
+        return YouTubeAPIResponse(json_, status)
     
     async def set_(self):
         NotImplemented

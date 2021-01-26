@@ -3,4 +3,4 @@
 .env
 .vscode/
 __py_cache__/
-test.py
+test*.py
