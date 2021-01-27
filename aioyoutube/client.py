@@ -2,6 +2,7 @@ from asyncio import AbstractEventLoop
 from aiohttp import ClientSession
 import asyncio
 import json
+import base64
 
 from .http import YouTubeAPISession, YouTubeAPIResponse
 from .parse import parse_kind, build_endpoint
@@ -160,13 +161,23 @@ class YouTubeAuthClient(YouTubeAPIClient):
         result = await self._session.put(endpoint=endpoint, data=json.dumps(data), 
             headers={'Authorization': 'Bearer {}'.format(self._token),
                 'Content-Type': 'application/json'})
-        json_ = await result.json()
-        status = result.status
 
-        return YouTubeAPIResponse(json_, status)
+        return YouTubeAPIResponse(await result.json(), result.status)
     
-    async def set_(self):
-        NotImplemented
+    async def set_(self, kind: str, videoId: str, data: bytes, **kwargs):
+
+        query_type = parse_kind(kind)
+        query_type += '/set'
+        
+        endpoint = build_endpoint(query_type=query_type, key=self._key, videoId=videoId, **kwargs)
+        url = 'https://www.googleapis.com/upload/youtube/v3/' + endpoint
+
+        result = await self._session.post(endpoint=url, data=data,
+            headers={'Authorization': 'Bearer {}'.format(self._token),
+                'Content-Type': 'application/octet-stream',
+                'Content-Length': str(len(data))})
+
+        return YouTubeAPIResponse(await result.json(), result.status)
 
     async def list_(self, kind: str, part: list, **kwargs):
         return await super().list_(kind, part, token=self._token, **kwargs)
@@ -190,7 +201,8 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
         result = await self._session.get(endpoint=endpoint, id=id, **kwargs,
             headers={'Authorization': 'Bearer {}'.format(self._token)})
-        return await result.json()
+        
+        return YouTubeAPIResponse(await result.json(), result.status)
 
     async def getRating(self, id: list, **kwargs):
         
