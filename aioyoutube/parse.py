@@ -1,20 +1,20 @@
-from .valid import KINDS
+from .valid import YOUTUBE_RESOURCES
 
-def parse_kind(kind):    
+def parse_resource(resource: str):    
 
-    kind_ = kind
-    if 'youtube#' in kind:
-        kind_ = kind.split('#')[1]
+    resource_ = resource
+    if 'youtube#' in resource:
+        resource_ = resource.split('#')[1]
     
-    if kind_ not in KINDS:
-        raise ValueError('Kind argument must be one of: %r' % list(KINDS))
+    if resource_ not in YOUTUBE_RESOURCES:
+        raise ValueError('Kind argument must be one of: %r' % list(YOUTUBE_RESOURCES))
     
-    if kind_[-1] == 'y': 
-        return kind_[0:-1] + 'ies'
-    elif kind_ != 'search': 
-        return kind_ + 's'
+    if resource_[-1] == 'y': 
+        return resource_[0:-1] + 'ies'
+    elif resource_ != 'search': 
+        return resource_ + 's'
     else: 
-        return kind_
+        return resource_
 
 def build_endpoint(query_type: str, key: str, part: list = [], **kwargs):
     

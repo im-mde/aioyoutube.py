@@ -1,5 +1,5 @@
 RATINGS = frozenset({'like', 'dislike', 'none'})
-KINDS = frozenset({
+YOUTUBE_RESOURCES = frozenset({
     'watermark',  
     'videoCategory',
     'video',
@@ -23,7 +23,7 @@ KINDS = frozenset({
 })
 
 def get_kind_values():
-    return list(KINDS)
+    return list(YOUTUBE_RESOURCES)
 
 def get_rating_values():
     return list(RATINGS)
