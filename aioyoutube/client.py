@@ -219,8 +219,17 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
         return YouTubeAPIResponse(await result.json(), result.status)
         
-    async def reportAbuse(self, videoId_: str, reasonId_: str, **kwargs):
-        NotImplemented
+    async def reportAbuse(self, resource: str, data: dict, **kwargs):
+        
+        query_type = parse_resource(resource)
+        query_type += '/reportAbuse'
+
+        endpoint = build_endpoint(query_type=query_type, key=self._key, **kwargs)
+
+        result = await self._session.post(endpoint=endpoint, data=data,
+            headers={'Authorization': 'Bearer {}'.format(self._token)})
+
+        return YouTubeAPIResponse(await result.json(), result.status)
 
 class YouTubeCrossClient(YouTubeAuthClient, YouTubeBaseClient):
 
