@@ -2,15 +2,12 @@ from asyncio import AbstractEventLoop
 from aiohttp import ClientSession
 import asyncio
 import json
-import base64
 import aiohttp
 
 from .http import YouTubeAPISession, YouTubeAPIResponse
 from .parse import parse_resource, build_endpoint
 from .valid import RATINGS
 
-API_SERVICE_NAME = 'youtube'
-API_VERSION = 'v3'
 
 class YouTubeAPIClient:
 
@@ -59,8 +56,7 @@ class YouTubeAPIClient:
 
     async def list_(self, resource, part: list, token: str = None, **kwargs):
 
-        query_type = parse_resource(resource)
-        endpoint = build_endpoint(query_type=query_type, key=self._key, part=part, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, part=part, **kwargs)
         
         headers=None
         if token != None:
@@ -69,6 +65,7 @@ class YouTubeAPIClient:
         result = await self._session.get(endpoint=endpoint, headers=headers)
         
         return YouTubeAPIResponse(await result.json(), result.status)
+
 
 class YouTubeBaseClient(YouTubeAPIClient):
     
@@ -94,7 +91,8 @@ class YouTubeBaseClient(YouTubeAPIClient):
 
     async def list_(self, resource, part: list, **kwargs):
         return await super().list_(resource=resource, part=part, **kwargs)
-    
+
+
 class YouTubeAuthClient(YouTubeAPIClient):
 
     """
@@ -136,10 +134,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
     async def insert(self, resource: str, data: dict, media: bytes = None, part: list = [], method: str = None, **kwargs):
         
-        query_type = parse_resource(resource)
-        if method != None: query_type += method
-        
-        endpoint = build_endpoint(query_type=query_type, key=self._key, part=part, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, part=part, method=method, **kwargs)
         
         if media != None:
             with aiohttp.MultipartWriter('form-data') as mpw:
@@ -159,8 +154,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
     async def update(self, resource: str, data: dict, part: list = [], **kwargs):
         
-        query_type = parse_resource(resource)
-        endpoint = build_endpoint(query_type=query_type, key=self._key, part=part, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, part=part, **kwargs)
         
         result = await self._session.put(endpoint=endpoint, data=json.dumps(data), 
             headers={'Authorization': 'Bearer {}'.format(self._token),
@@ -172,11 +166,8 @@ class YouTubeAuthClient(YouTubeAPIClient):
         
         if rating not in RATINGS:
             raise ValueError('rating argument must be one of %r' % list(RATINGS))
-        
-        query_type = parse_resource(resource)
-        query_type += '/rate'
 
-        endpoint = build_endpoint(query_type=query_type, key=self._key, rating=rating, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, method='rate', rating=rating, **kwargs)
 
         result = await self._session.post(endpoint=endpoint, headers={
             'Authorization': 'Bearer {}'.format(self._token)})
@@ -185,10 +176,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
     async def getRating(self, resource: str, **kwargs):
         
-        query_type = parse_resource(resource)
-        query_type += '/getRating'
-
-        endpoint = build_endpoint(query_type=query_type, key=self._key, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, method='getRating', **kwargs)
 
         result = await self._session.get(endpoint=endpoint, 
             headers={'Authorization': 'Bearer {}'.format(self._token)})
@@ -197,10 +185,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         
     async def reportAbuse(self, resource: str, data: dict, **kwargs):
         
-        query_type = parse_resource(resource)
-        query_type += '/reportAbuse'
-
-        endpoint = build_endpoint(query_type=query_type, key=self._key, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, method='reportAbuse' **kwargs)
 
         result = await self._session.post(endpoint=endpoint, data=data,
             headers={'Authorization': 'Bearer {}'.format(self._token)})
@@ -209,8 +194,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
     async def delete(self, resource: str, **kwargs):
 
-        query_type = parse_resource(resource)
-        endpoint = build_endpoint(query_type=query_type, key=self._key, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, **kwargs)
 
         result = await self._session.delete(endpoint=endpoint, 
             headers={'Authorization': 'Bearer {}'.format(self._token)})
@@ -219,10 +203,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
     async def set_(self, resource: str, data: bytes, **kwargs):
 
-        query_type = parse_resource(resource)
-        query_type += '/set'
-        
-        endpoint = build_endpoint(query_type=query_type, key=self._key, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, method='set', **kwargs)
         url = 'https://www.googleapis.com/upload/youtube/v3/' + endpoint
 
         result = await self._session.post(endpoint=url, data=data,
@@ -234,21 +215,16 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
     async def unset(self, resource: str, **kwargs):
 
-        query_type = parse_resource(resource)
-        query_type += '/unset'
+        endpoint = build_endpoint(resource=resource, key=self._key, method='unset', **kwargs)
 
-        endpoint = build_endpoint(query_type=query_type, key=self._key,  **kwargs)
-
-        result = await self._session.post(endpoint=endpoint)
+        result = await self._session.post(endpoint=endpoint, headers={
+            'Authorization': 'Bearer {}'.format(self._token)})
 
         return YouTubeAPIResponse(await result.json(), result.status)
 
     async def download(self, resource: str, **kwargs):
-        
-        query_type = parse_resource(resource)
-        query_type += '/download'
 
-        endpoint = build_endpoint(query_type=query_type, key=self._key, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, method='download' **kwargs)
 
         result = await self._session.post(endpoint=endpoint, headers={
             'Authorization': 'Bearer {}'.format(self._token)})
@@ -257,10 +233,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
     async def markAsSpam(self, resource: str, **kwargs):
 
-        query_type = parse_resource(resource)
-        query_type += '/markAsSpam'
-
-        endpoint = build_endpoint(query_type=query_type, key=self._key, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, method='markAsSpam' **kwargs)
 
         result = await self._session.post(endpoint=endpoint, headers={
             'Authorization': 'Bearer {}'.format(self._token)})
@@ -269,10 +242,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
     async def setModerationStatus(self, resource: str, **kwargs):
 
-        query_type = parse_resource(resource)
-        query_type += '/setModerationStatus'
-
-        endpoint = build_endpoint(query_type=query_type, key=self._key, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, method='setModerationStatus' **kwargs)
 
         result = await self._session.post(endpoint=endpoint, headers={
             'Authorization': 'Bearer {}'.format(self._token)})

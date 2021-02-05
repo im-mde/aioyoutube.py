@@ -1,6 +1,9 @@
 from .valid import YOUTUBE_RESOURCES
 
-def parse_resource(resource: str):    
+
+# takes youtube resource and returns the equivalent url resource
+
+def parse_resource(resource: str, method: str = ''):    
 
     resource_ = resource
     if 'youtube#' in resource:
@@ -17,15 +20,21 @@ def parse_resource(resource: str):
     elif resource[-1] == 'y': 
         return resource_[0:-1] + 'ies'
     else: 
-        return resource_
+        return resource_ + 's'
 
-def build_endpoint(query_type: str, key: str, part: list = [], **kwargs):
+
+# generates a youtube api url from a youtube resource, other required parameters, and key word arguments
+
+def build_endpoint(resource: str, key: str, part: list = [], method: str = None, **kwargs):
     
-    endpoint = '{}?'.format(query_type)
+    resource = parse_resource(resource=resource)    
+    if method != None: resource += '/' + method
+
+    endpoint = '{}?'.format(resource)
 
     if len(part) > 0:
         part = ','.join(part)
-        endpoint = '{}?part={}'.format(query_type, part)
+        endpoint += 'part=' + part
 
     for key_, value in kwargs.items():
         endpoint += '&{}={}'.format(key_, str(value))
@@ -33,4 +42,4 @@ def build_endpoint(query_type: str, key: str, part: list = [], **kwargs):
     # example of a generated endpoint:
     # ex. videos?part=snippet&id=dQw4w9WgXcQ&maxResults=50&key=[YOUR_API_KEY]
 
-    return endpoint + '&key={}'.format(key)
+    return endpoint + '&key=' + key
