@@ -10,7 +10,7 @@ def parse_resource(resource: str, method: str = ''):
         resource_ = resource.split('#')[1]
     
     if resource_ not in YOUTUBE_RESOURCES:
-        raise ValueError('Kind argument must be one of: %r' % list(YOUTUBE_RESOURCES))
+        raise ValueError('Resource argument must be one of: %r' % list(YOUTUBE_RESOURCES))
     
     # "search" resource is a special case that doesn't convert to plural
     # ex. video -> videos but search -> search

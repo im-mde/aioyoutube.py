@@ -141,8 +141,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
                 mpw.append_json(data)
                 mpw.append(media, {'Content-Type': 'application/octet-stream'})
                 
-                url = 'https://www.googleapis.com/upload/youtube/v3/' + endpoint
-                result = await self._session.post(endpoint=url, data=mpw,
+                result = await self._session.post(endpoint=endpoint, data=mpw, upload=True,
                     headers={'Authorization': 'Bearer {}'.format(self._token)})
 
                 return YouTubeAPIResponse(await result.json(), result.status)
