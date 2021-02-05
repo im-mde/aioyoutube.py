@@ -3,6 +3,7 @@ from aiohttp import ClientSession
 import asyncio
 import json
 import base64
+import aiohttp
 
 from .http import YouTubeAPISession, YouTubeAPIResponse
 from .parse import parse_resource, build_endpoint
@@ -133,16 +134,28 @@ class YouTubeAuthClient(YouTubeAPIClient):
     async def list_(self, resource: str, part: list, **kwargs):
         return await super().list_(resource, part, token=self._token, **kwargs)
 
-    # TODO: YET TO BE PROPERLY IMPLEMENTED
-    async def insert(self, resource: str, data: dict, part: list = [], **kwargs):
+    async def insert(self, resource: str, data: dict, media: bytes = None, part: list = [], method: str = None, **kwargs):
         
         query_type = parse_resource(resource)
+        if method != None: query_type += method
+        
         endpoint = build_endpoint(query_type=query_type, key=self._key, part=part, **kwargs)
+        
+        if media != None:
+            with aiohttp.MultipartWriter('form-data') as mpw:
+                mpw.append_json(data)
+                mpw.append(media, {'Content-Type': 'application/octet-stream'})
+                
+                url = 'https://www.googleapis.com/upload/youtube/v3/' + endpoint
+                result = await self._session.post(endpoint=url, data=mpw,
+                    headers={'Authorization': 'Bearer {}'.format(self._token)})
 
-        result = await self._session.put(endpoint=endpoint, data=data,
-            headers={'Authorization': 'Bearer {}'.format(self._token),
-                'Content-Type': 'application/octet-stream'})
-        return await result.json()
+                return YouTubeAPIResponse(await result.json(), result.status)
+        else:
+            result = await self._session.post(endpoint=endpoint, data=json.dumps(data),
+                headers={'Authorization': 'Bearer {}'.format(self._token)})
+
+            return YouTubeAPIResponse(await result.json(), result.status)
 
     async def update(self, resource: str, data: dict, part: list = [], **kwargs):
         
