@@ -1,4 +1,5 @@
 RATINGS = frozenset({'like', 'dislike', 'none'})
+
 YOUTUBE_RESOURCES = frozenset({
     'watermark',  
     'videoCategory',
