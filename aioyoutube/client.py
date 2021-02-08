@@ -1,20 +1,20 @@
+import asyncio
+import aiohttp
+import json
 from asyncio import AbstractEventLoop
 from aiohttp import ClientSession
-import asyncio
-import json
-import aiohttp
 
 from .http import YouTubeAPISession, YouTubeAPIResponse
-from .parse import parse_resource, build_endpoint
+from .parse import build_endpoint
 from .valid import RATINGS
 
 
 class YouTubeAPIClient:
 
     """
-        Foundational client object for the YouTube Data API.
+        Base client object for the YouTube Data API with basic connection functionality.
 
-        An object of this class should not be directly initialized
+        An object of this class should not be directly initialized.
         
         Parent(s):
             None
@@ -54,26 +54,14 @@ class YouTubeAPIClient:
     async def close(self):
         await self._session.close()
 
-    async def list_(self, resource, part: list, token: str = None, **kwargs):
 
-        endpoint = build_endpoint(resource=resource, key=self._key, part=part, **kwargs)
-        
-        headers=None
-        if token != None:
-            headers = {'Authorization': 'Bearer {}'.format(token)}
-
-        result = await self._session.get(endpoint=endpoint, headers=headers)
-        
-        return YouTubeAPIResponse(await result.json(), result.status)
-
-
-class YouTubeBaseClient(YouTubeAPIClient):
+class YouTubeClient(YouTubeAPIClient):
     
     """
         Client object for making YouTube API requests w/o an access token.
         
         Use this client when you are wanting to access less sensitive data 
-        from the YouTube Data API.
+        from the YouTube Data API such as gathering public video data.
         
         Parent(s):
             YouTubeAPIClient
@@ -90,7 +78,12 @@ class YouTubeBaseClient(YouTubeAPIClient):
             q=search_term, **kwargs)        
 
     async def list_(self, resource, part: list, **kwargs):
-        return await super().list_(resource=resource, part=part, **kwargs)
+
+        endpoint = build_endpoint(resource=resource, key=self._key, part=part, **kwargs)
+        
+        result = await self._session.get(endpoint=endpoint)
+        
+        return YouTubeAPIResponse(await result.json(), result.status)
 
 
 class YouTubeAuthClient(YouTubeAPIClient):
@@ -130,7 +123,13 @@ class YouTubeAuthClient(YouTubeAPIClient):
         self._token = value
 
     async def list_(self, resource: str, part: list, **kwargs):
-        return await super().list_(resource, part, token=self._token, **kwargs)
+
+        endpoint = build_endpoint(resource=resource, key=self._key, part=part, **kwargs)
+
+        result = await self._session.get(endpoint=endpoint, headers={
+            'Authorization': 'Bearer {}'.format(self._token)})
+        
+        return YouTubeAPIResponse(await result.json(), result.status)
 
     async def insert(self, resource: str, data: dict, media: bytes = None, part: list = [], method: str = None, **kwargs):
         
@@ -221,6 +220,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
         return YouTubeAPIResponse(await result.json(), result.status)
 
+    # TODO: still needs to be implemented properly
     async def download(self, resource: str, **kwargs):
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='download' **kwargs)
@@ -249,7 +249,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         return YouTubeAPIResponse(await result.json(), result.status)
 
 
-class YouTubeCrossClient(YouTubeAuthClient, YouTubeBaseClient):
+class YouTubeHybridClient(YouTubeAuthClient, YouTubeClient):
 
     """
         Client object for making YouTube API requests with or w/o an access token.
@@ -273,4 +273,4 @@ class YouTubeCrossClient(YouTubeAuthClient, YouTubeBaseClient):
         if auth:
             return await super().list_(resource, part, **kwargs)
         else:
-            return await YouTubeBaseClient.list_(self, resource, part, **kwargs)
+            return await YouTubeClient.list_(self, resource, part, **kwargs)
