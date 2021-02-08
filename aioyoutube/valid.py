@@ -1,4 +1,10 @@
+
+# list of all valid ratings that can be utilized in this library
+
 RATINGS = frozenset({'like', 'dislike', 'none'})
+
+
+# list of all valid youtube resources than can be utilized in this library
 
 YOUTUBE_RESOURCES = frozenset({
     'watermark',  
@@ -23,8 +29,8 @@ YOUTUBE_RESOURCES = frozenset({
     'activity'
 })
 
-def get_kind_values():
+def get_youtube_resources():
     return list(YOUTUBE_RESOURCES)
 
-def get_rating_values():
+def get_ratings():
     return list(RATINGS)
