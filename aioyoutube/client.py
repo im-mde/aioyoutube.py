@@ -205,7 +205,14 @@ class YouTubeAuthClient(YouTubeAPIClient):
         endpoint = build_endpoint(resource=resource, key=self._key, method=method, **kwargs)
         result = await self._session.get(endpoint=endpoint, headers={
             'Authorization': 'Bearer {}'.format(self._token)})
-        return YouTubeAPIResponse(None, result.status, await result.read())
+
+        # this is necessary because in a good request, the returned content will only be binary data and
+        # causes an exception if you try to call the json() coroutine
+
+        try: 
+            return YouTubeAPIResponse(await result.json(), result.status, await result.read())
+        except:
+            return YouTubeAPIResponse(None, result.status, await result.read())
 
     async def markAsSpam(self, resource: str, **kwargs):
 
