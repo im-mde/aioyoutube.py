@@ -1,4 +1,6 @@
+import asyncio
 from typing import Any
+from asyncio import AbstractEventLoop
 from aiohttp import ClientSession
 from aiohttp.typedefs import StrOrURL
 from aiohttp.client_exceptions import InvalidURL
@@ -7,10 +9,8 @@ from aiohttp.client_exceptions import InvalidURL
 BASE_URL = 'https://www.googleapis.com/youtube/v3/'
 UPLOAD_URL = 'https://www.googleapis.com/upload/youtube/v3/'
 
-# TODO: Implement this class w/o inheriting ClientSession. It's recommended not to inherit 
-#       in favor of including a ClienSession object within your custom client class
 
-class YouTubeAPISession(ClientSession):
+class YouTubeAPISession():
 
     """
         Represents an HTTP client session to the YouTube Data API.
@@ -26,43 +26,48 @@ class YouTubeAPISession(ClientSession):
             upload_url type(str): url pointing to the upload portion of the YouTube Data API 
     """
 
-    def __init__(self, base_url: str = None, upload_url: str = None, **kwargs):
+    def __init__(self, loop: AbstractEventLoop = None, base_url: str = None, upload_url: str = None, **kwargs):
 
+        loop_ = loop or asyncio.get_event_loop()
+        self._session = ClientSession(loop=loop_, **kwargs)
         self.base_url = base_url or BASE_URL
         self.upload_url = upload_url or UPLOAD_URL
-        super().__init__(**kwargs)
 
-    def get(self, endpoint: StrOrURL, *, allow_redirects: bool = True, **kwargs):
+    async def get(self, endpoint: StrOrURL, *, allow_redirects: bool = True, **kwargs):
 
         if 'https://www.googleapis.com' not in endpoint:
-            return super().get(url=self.base_url + endpoint, allow_redirects=allow_redirects, **kwargs)
+            return await self._session.get(url=self.base_url + endpoint, allow_redirects=allow_redirects, **kwargs)
         else:
-            return super().get(url=endpoint, allow_redirects=allow_redirects, **kwargs)
+            return await self._session.get(url=endpoint, allow_redirects=allow_redirects, **kwargs)
         
-    def put(self, endpoint: StrOrURL, *, data: Any = None, **kwargs: Any):
+    async def put(self, endpoint: StrOrURL, *, data: Any = None, **kwargs: Any):
         
         if 'https://www.googleapis.com' not in endpoint:
-            return super().put(url=self.base_url + endpoint, data=data, **kwargs)
+            return await self._session.put(url=self.base_url + endpoint, data=data, **kwargs)
         else:
-            return super().put(url=endpoint, data=data)
+            return await self._session.put(url=endpoint, data=data)
 
-    def post(self, endpoint: StrOrURL, * , data: Any = None, upload: bool = False, **kwargs: Any):
+    async def post(self, endpoint: StrOrURL, * , data: Any = None, upload: bool = False, **kwargs: Any):
 
         if 'https://www.googleapis.com' not in endpoint:
             if upload:
-                return super().post(url=self.upload_url + endpoint, data=data, **kwargs)
+                return await self._session.post(url=self.upload_url + endpoint, data=data, **kwargs)
             else:
-                return super().post(url=self.base_url + endpoint, data=data, **kwargs)
+                return await self._session.post(url=self.base_url + endpoint, data=data, **kwargs)
         else:
-            return super().post(url=endpoint, data=data, **kwargs)
+            return await self._session.post(url=endpoint, data=data, **kwargs)
 
-    def delete(self, endpoint: StrOrURL, **kwargs: Any):
+    async def delete(self, endpoint: StrOrURL, **kwargs: Any):
         
         if 'https://www.googleapis.com' not in endpoint:
-            url = self.base_url + endpoint
-            return super().delete(url=url, **kwargs)
+            return await self._session.delete(url=self.base_url + endpoint, **kwargs)
         else:
-            return super().post(url=endpoint, **kwargs)
+            return await self._session.post(url=endpoint, **kwargs)
+
+    async def close(self):
+        if not self._session.closed:
+            await self._session.close()
+
 
 class YouTubeAPIResponse:
 
