@@ -66,10 +66,11 @@ class YouTubeAPISession(ClientSession):
 
 class YouTubeAPIResponse:
 
-    def __init__(self, json: dict, status: int):
+    def __init__(self, json: dict, status: int, data: bytes = None):
         
         self._json = json
         self._status = status
+        self._data = data
     
     @property
     def json(self):
@@ -78,3 +79,7 @@ class YouTubeAPIResponse:
     @property
     def status(self):
         return self._status
+    
+    @property
+    def data(self):
+        return self._data
