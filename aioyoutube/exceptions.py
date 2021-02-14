@@ -4,7 +4,7 @@ async def find_exception(response: YouTubeAPIResponse):
     
     if response.status == 400: 
         raise YouTubeBadRequestException(response.status, await response.json())
-    elif response.status == 402:
+    elif response.status == 401:
         raise YouTubeUnauthorizedException(response.status, await response.json())
     elif response.status == 403:
         raise YouTubeForbiddenException(response.status, await response.json())
