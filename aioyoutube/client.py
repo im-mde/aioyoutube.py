@@ -29,11 +29,11 @@ class YouTubeAPIClient:
         self._session = None
 
     @classmethod
-    def from_connect(cls, key: str, session: YouTubeAPISession = None, loop: AbstractEventLoop = None):
+    def from_connect(cls, key: str, loop: AbstractEventLoop = None):
         
         class_ = cls(key)
         loop_ = loop or asyncio.get_event_loop()
-        class_._session = session or YouTubeAPISession(loop=loop_)
+        class_._session = YouTubeAPISession(loop=loop_)
         return class_
 
     @property
@@ -44,10 +44,10 @@ class YouTubeAPIClient:
     def key(self, value: str):
         self._key = value
 
-    def connect(self, session: YouTubeAPISession = None, loop: AbstractEventLoop = None):
+    def connect(self, loop: AbstractEventLoop = None):
         
         loop_ = loop or asyncio.get_event_loop()
-        self._session = session or YouTubeAPISession(loop=loop_)
+        self._session = YouTubeAPISession(loop=loop_)
 
     def close(self):
         self._session.close()
@@ -103,11 +103,11 @@ class YouTubeAuthClient(YouTubeAPIClient):
         super().__init__(key)
     
     @classmethod
-    def from_token_connect(cls, key: str, token: str, session: YouTubeAPISession = None, loop: AbstractEventLoop = None):
+    def from_token_connect(cls, key: str, token: str, loop: AbstractEventLoop = None):
         
         class_ = cls(key, token)
         loop_ = loop or asyncio.get_event_loop()
-        class_._session = session or YouTubeAPISession(loop=loop_)
+        class_._session = YouTubeAPISession(loop=loop_)
         return class_
 
     @property
