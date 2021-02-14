@@ -20,10 +20,8 @@ class YouTubeAPIClient:
             None
         
         Attribute(s):
-            key type(str): YouTube API key 
+            key type(str): YouTube API key
     """
-
-    QUOTA_LIMIT = 10000
 
     def __init__(self, key: str):
 
@@ -31,7 +29,7 @@ class YouTubeAPIClient:
         self._session = None
 
     @classmethod
-    async def from_connect(cls, key: str, session: YouTubeAPISession = None, loop: AbstractEventLoop = None):
+    def from_connect(cls, key: str, session: YouTubeAPISession = None, loop: AbstractEventLoop = None):
         
         class_ = cls(key)
         loop_ = loop or asyncio.get_event_loop()
@@ -46,13 +44,13 @@ class YouTubeAPIClient:
     def key(self, value: str):
         self._key = value
 
-    async def connect(self, session: YouTubeAPISession = None, loop: AbstractEventLoop = None):
+    def connect(self, session: YouTubeAPISession = None, loop: AbstractEventLoop = None):
         
         loop_ = loop or asyncio.get_event_loop()
         self._session = session or YouTubeAPISession(loop=loop_)
 
-    async def close(self):
-        await self._session.close()
+    def close(self):
+        self._session.close()
 
 
 class YouTubeClient(YouTubeAPIClient):
@@ -73,9 +71,9 @@ class YouTubeClient(YouTubeAPIClient):
     def __init__(self, key: str):
         super().__init__(key)
 
-    async def search(self, search_term: str, **kwargs):
+    async def search(self, search: str, **kwargs):
         return await self.list_(resource='search', part=['snippet'], 
-            q=search_term, **kwargs)        
+            q=search, **kwargs)        
 
     async def list_(self, resource, part: list, **kwargs):
 
@@ -97,7 +95,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         
         Attribute(s):
             key type(str): YouTube API key
-            token type(str): Access token
+            token type(str): OAuth2 Access token
     """
 
     def __init__(self, key: str, token: str):
@@ -105,7 +103,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         super().__init__(key)
     
     @classmethod
-    async def from_token_connect(cls, key: str, token: str, session: YouTubeAPISession = None, loop: AbstractEventLoop = None):
+    def from_token_connect(cls, key: str, token: str, session: YouTubeAPISession = None, loop: AbstractEventLoop = None):
         
         class_ = cls(key, token)
         loop_ = loop or asyncio.get_event_loop()

@@ -19,7 +19,7 @@ class YouTubeAPISession():
         to directly control your HTTP requests with this class. 
 
         Parent(s):
-            aiohttp.ClientSession
+            None
 
         Attribute(s):
             base_url type(str): base url pointing to the YouTube Data API w/o an endpoint
@@ -70,6 +70,21 @@ class YouTubeAPISession():
 
 
 class YouTubeAPIResponse:
+
+    """
+        Object for an http response from the YouTube Data API
+
+        All client coroutines will return this object that encapsulates
+        any json or binary data in addition to the http status code.
+
+        Parent(s):
+            None
+
+        Attribute(s):
+            json type(dict): json returned from an http request
+            status type(int): http response status code for http request
+            data type(bytes): binary data returned from http request
+    """
 
     def __init__(self, json: dict, status: int, data: bytes = None):
         
