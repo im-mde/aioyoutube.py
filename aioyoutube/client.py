@@ -7,7 +7,7 @@ from aiohttp import ClientSession
 from .http import YouTubeAPISession, YouTubeAPIResponse
 from .parse import build_endpoint
 from .valid import RATINGS
-from .exceptions import find_exception
+from .exceptions import find_http_exception
 
 
 class YouTubeAPIClient:
@@ -84,7 +84,7 @@ class YouTubeClient(YouTubeAPIClient):
         endpoint = build_endpoint(resource=resource, key=self._key, part=part, **kwargs)
         result = await self._session.get(endpoint=endpoint)
 
-        if self._exceptions == True: await find_exception(result)
+        if self._exceptions == True: await find_http_exception(result)
         return YouTubeAPIResponse(await result.json(), result.status, None)
 
 
@@ -131,7 +131,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         result = await self._session.get(endpoint=endpoint, headers={
             'Authorization': 'Bearer {}'.format(self._token)})
 
-        if self._exceptions == True: await find_exception(result)
+        if self._exceptions == True: await find_http_exception(result)
         return YouTubeAPIResponse(await result.json(), result.status, None)
 
     async def insert(self, resource: str, data: dict, media: bytes = None, part: list = [], method: str = None, **kwargs):
@@ -146,13 +146,13 @@ class YouTubeAuthClient(YouTubeAPIClient):
                 result = await self._session.post(endpoint=endpoint, data=mpw, upload=True,
                     headers={'Authorization': 'Bearer {}'.format(self._token)})
 
-                if self._exceptions == True: await find_exception(result) 
+                if self._exceptions == True: await find_http_exception(result) 
                 return YouTubeAPIResponse(await result.json(), result.status, None)
         else:
             result = await self._session.post(endpoint=endpoint, data=json.dumps(data),
                 headers={'Authorization': 'Bearer {}'.format(self._token)})
             
-            if self._exceptions == True: await find_exception(result)
+            if self._exceptions == True: await find_http_exception(result)
             return YouTubeAPIResponse(await result.json(), result.status, None)
 
     async def update(self, resource: str, data: dict, part: list = [], **kwargs):
@@ -162,7 +162,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
             headers={'Authorization': 'Bearer {}'.format(self._token),
                 'Content-Type': 'application/json'})
 
-        if self._exceptions == True: await find_exception(result)
+        if self._exceptions == True: await find_http_exception(result)
         return YouTubeAPIResponse(await result.json(), result.status, None)
 
     async def rate(self, resource: str, rating: str, **kwargs):
@@ -174,7 +174,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         result = await self._session.post(endpoint=endpoint, headers={
             'Authorization': 'Bearer {}'.format(self._token)})
         
-        if self._exceptions == True: await find_exception(result)
+        if self._exceptions == True: await find_http_exception(result)
         return YouTubeAPIResponse(await result.json(), result.status, None)
 
     async def getRating(self, resource: str, **kwargs):
@@ -183,7 +183,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         result = await self._session.get(endpoint=endpoint, 
             headers={'Authorization': 'Bearer {}'.format(self._token)})
         
-        if self._exceptions == True: await find_exception(result)
+        if self._exceptions == True: await find_http_exception(result)
         return YouTubeAPIResponse(await result.json(), result.status, None)
         
     async def reportAbuse(self, resource: str, data: dict, **kwargs):
@@ -192,7 +192,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         result = await self._session.post(endpoint=endpoint, data=data,
             headers={'Authorization': 'Bearer {}'.format(self._token)})
         
-        if self._exceptions == True: await find_exception(result)
+        if self._exceptions == True: await find_http_exception(result)
         return YouTubeAPIResponse(await result.json(), result.status, None)
 
     async def delete(self, resource: str, **kwargs):
@@ -201,7 +201,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         result = await self._session.delete(endpoint=endpoint, 
             headers={'Authorization': 'Bearer {}'.format(self._token)})
         
-        if self._exceptions == True: await find_exception(result)
+        if self._exceptions == True: await find_http_exception(result)
         return YouTubeAPIResponse(await result.json(), result.status, None)
 
     async def set_(self, resource: str, data: bytes, **kwargs):
@@ -212,7 +212,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
                 'Content-Type': 'application/octet-stream',
                 'Content-Length': str(len(data))})
 
-        if self._exceptions == True: await find_exception(result)
+        if self._exceptions == True: await find_http_exception(result)
         return YouTubeAPIResponse(await result.json(), result.status, None)
 
     async def unset(self, resource: str, **kwargs):
@@ -221,7 +221,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         result = await self._session.post(endpoint=endpoint, headers={
             'Authorization': 'Bearer {}'.format(self._token)})
 
-        if self._exceptions == True: await find_exception(result)
+        if self._exceptions == True: await find_http_exception(result)
         return YouTubeAPIResponse(await result.json(), result.status, None)
 
     async def download(self, resource: str, method: str = None, **kwargs):
@@ -234,7 +234,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         # causes an exception if you try to call the json() coroutine
 
         try:
-            if self._exceptions == True: await find_exception(result)
+            if self._exceptions == True: await find_http_exception(result)
             return YouTubeAPIResponse(await result.json(), result.status, await result.read())
         except:
             return YouTubeAPIResponse(None, result.status, await result.read())
@@ -245,7 +245,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         result = await self._session.post(endpoint=endpoint, headers={
             'Authorization': 'Bearer {}'.format(self._token)})
 
-        if self._exceptions == True: await find_exception(result)
+        if self._exceptions == True: await find_http_exception(result)
         return YouTubeAPIResponse(await result.json(), result.status, None)
 
     async def setModerationStatus(self, resource: str, **kwargs):
@@ -254,7 +254,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         result = await self._session.post(endpoint=endpoint, headers={
             'Authorization': 'Bearer {}'.format(self._token)})
 
-        if self._exceptions == True: await find_exception(result)
+        if self._exceptions == True: await find_http_exception(result)
         return YouTubeAPIResponse(await result.json(), result.status, None)
 
 
