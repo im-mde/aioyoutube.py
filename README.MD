@@ -17,7 +17,30 @@ TBD
 4. Create your credentials and generate an API key.
 5. If applicable, register and generate OAuth 2.0 credentials.
 
+## Basic Example
+```
+from aioyoutube import YouTubeClient
+
+async def list_video(id: str, **kwargs):
+    
+    client = YouTubeClient(key=YOUTUBE_KEY)
+    response = await client.list_(resource='video', part=['snippet'], id=id, **kwargs)
+    
+    if response.status == 200:
+        print(response.json)
+
+if __name__ == '__main__':
+    asyncio.create_task(list_video('hifds'))
+```
+
+## Requirements
+This library requires the `aiohttp` library which is distrubuted under the Apache 2.0 license.
+
+## License
+`aioyoutube.py` is offered under the MIT License.
+
 ## Links
 * [YouTube Data API](https://developers.google.com/youtube/v3)
 * [Examples](https://github.com/im-mde/aioyoutube.py/tree/master/examples)
 * [Setup Instructions](https://developers.google.com/youtube/registering_an_application)
+* [aiohttp Repository](https://github.com/aio-libs/aiohttp)
