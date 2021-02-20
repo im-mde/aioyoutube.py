@@ -1,4 +1,5 @@
 from .http import YouTubeAPIResponse
+from .valid import get_youtube_resources, get_ratings
 
 async def find_http_exception(response: YouTubeAPIResponse):
     
@@ -115,3 +116,43 @@ class YouTubeForbiddenException(YouTubeAPIHttpException):
 
     def __init__(self, code: int, json: dict):
         super().__init__(code, json)
+
+
+class YouTubeResourceInvalidException(Exception):
+
+    """
+        Invalid YouTube resource exception.
+
+        This exception will occur when a resource is not valid but was input into 
+        the resource argument of a client method.
+
+        Parent(s):
+            Exception
+
+        Attribute(s):
+            None
+    """
+
+    def __init__(self):
+        self.message = 'Resource argument must be one of: {}'.format(get_youtube_resources())
+        super().__init__(self.message)
+
+
+class YouTubeRatingInvalidException(Exception):
+
+    """
+        Invalid YouTube rating exception.
+
+        This exception will occur when a rating value is not valid but was input
+        into the rating argument of the "rate" method of the client.
+
+        Parent(s):
+            Exception
+
+        Attribute(s):
+            None
+    """
+
+    def __init__(self):
+        self.message = 'Rating argument must be one of: {}'.format(get_ratings())
+        super().__init__(self.message)
