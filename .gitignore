@@ -3,3 +3,6 @@
 .env
 .vscode/
 __py_cache__/
+*.egg-info/
+build/
+dist/
