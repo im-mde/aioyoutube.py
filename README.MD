@@ -8,7 +8,7 @@ A low-level asynchronous python API wrapper for the YouTube Data API.
 * Utilizes `async` and `await` python syntax.
 
 ## Installing
-TBD
+`pip install aioyoutube.py`
 
 ## Setup 
 1. Access the Google API console with a google account.
