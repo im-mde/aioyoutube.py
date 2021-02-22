@@ -7,7 +7,7 @@ from aiohttp import ClientSession
 from .http import YouTubeAPISession, YouTubeAPIResponse
 from .parse import build_endpoint
 from .valid import RATINGS
-from .exceptions import find_http_exception
+from .exceptions import find_http_exception, YouTubeRatingInvalidException
 
 
 class YouTubeAPIClient:
@@ -168,7 +168,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
     async def rate(self, resource: str, rating: str, **kwargs):
         
         if rating not in RATINGS:
-            raise ValueError('rating argument must be one of %r' % list(RATINGS))
+            raise YouTubeRatingInvalidException
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='rate', rating=rating, **kwargs)
         result = await self._session.post(endpoint=endpoint, headers={
