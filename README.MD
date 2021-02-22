@@ -1,5 +1,5 @@
 # **aioyoutube**.**py**
-A low-level asynchronous python API wrapper for the YouTube Data API.
+An asynchronous python API wrapper for the YouTube Data API.
 
 ## Features
 * Full coverage of all functionality in the YouTube Data API [reference guide](https://developers.google.com/youtube/v3/docs).
@@ -18,6 +18,7 @@ A low-level asynchronous python API wrapper for the YouTube Data API.
 5. If applicable, register and generate OAuth 2.0 credentials.
 
 ## Basic Example
+
 ```
 import os
 import sys
