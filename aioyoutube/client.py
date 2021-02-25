@@ -1,14 +1,16 @@
-import asyncio
-import aiohttp
-import json
+import asyncio, aiohttp, json
 from asyncio import AbstractEventLoop
 from aiohttp import ClientSession
 
 from .http import YouTubeAPISession, YouTubeAPIResponse
 from .parse import build_endpoint
 from .valid import RATINGS
-from .exceptions import find_http_exception, YouTubeRatingInvalidException
-
+from .exceptions import (
+    find_http_exception, 
+    YouTubeRatingInvalidException, 
+    YouTubeKeyNoneException, 
+    YouTubeTokenNoneException
+)
 
 class YouTubeAPIClient:
 
@@ -26,6 +28,9 @@ class YouTubeAPIClient:
     """
 
     def __init__(self, key: str, exceptions: bool = False):
+
+        if key == None:
+            raise YouTubeKeyNoneException
 
         self._key = key
         self._exceptions = exceptions
@@ -106,6 +111,10 @@ class YouTubeAuthClient(YouTubeAPIClient):
     """
 
     def __init__(self, key: str, token: str, exceptions: bool = False):
+
+        if token == None:
+            raise YouTubeTokenNoneException
+        
         self._token = token
         super().__init__(key, exceptions)
     
