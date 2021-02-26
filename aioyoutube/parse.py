@@ -1,5 +1,5 @@
 from .valid import YOUTUBE_RESOURCES
-from .exceptions import YouTubeResourceInvalidException
+from .exceptions import ResourceInvalidException
 
 # takes youtube resource and returns the equivalent url resource
 
@@ -10,7 +10,7 @@ def parse_resource(resource: str, method: str = ''):
         resource_ = resource.split('#')[1]
     
     if resource_ not in YOUTUBE_RESOURCES:
-        raise YouTubeResourceInvalidException
+        raise ResourceInvalidException
         
     # "search" resource is a special case that doesn't convert to plural
     # ex. video -> videos but search -> search

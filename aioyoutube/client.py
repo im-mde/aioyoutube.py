@@ -7,9 +7,10 @@ from .parse import build_endpoint
 from .valid import RATINGS
 from .exceptions import (
     find_http_exception, 
-    YouTubeRatingInvalidException, 
-    YouTubeKeyNoneException, 
-    YouTubeTokenNoneException
+    RatingInvalidException,
+    ResourceInvalidException,
+    YouTubeKeyNoneException,
+    OAuthTokenNoneException
 )
 
 class YouTubeAPIClient:
@@ -113,7 +114,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
     def __init__(self, key: str, token: str, exceptions: bool = False):
 
         if token == None:
-            raise YouTubeTokenNoneException
+            raise OAuthTokenNoneException
         
         self._token = token
         super().__init__(key, exceptions)
@@ -177,7 +178,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
     async def rate(self, resource: str, rating: str, **kwargs):
         
         if rating not in RATINGS:
-            raise YouTubeRatingInvalidException
+            raise RatingInvalidException
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='rate', rating=rating, **kwargs)
         result = await self._session.post(endpoint=endpoint, headers={
