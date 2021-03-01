@@ -1,11 +1,7 @@
 import asyncio
-
+import aiohttp
 from typing import Any, Optional, MutableMapping, Tuple, Union
-from asyncio import AbstractEventLoop
 from aiohttp import ClientSession
-from aiohttp.typedefs import StrOrURL
-from aiohttp.client_exceptions import InvalidURL
-
 
 BASE_URL = 'https://www.googleapis.com/youtube/v3/'
 UPLOAD_URL = 'https://www.googleapis.com/upload/youtube/v3/'
@@ -23,22 +19,11 @@ class YouTubeAPISession():
             None
 
         Attribute(s):
-            base_url type(str): base url pointing to the YouTube Data API w/o an endpoint
-            upload_url type(str): url pointing to the upload portion of the YouTube Data API 
+            session type(aiohttp.ClientSession): async http session from aiohttp library
     """
 
-    def __init__(
-        self, 
-        loop: AbstractEventLoop = None, 
-        base_url: str = None, 
-        upload_url: str = None, 
-        **kwargs
-    ) -> None:
-
-        loop_ = loop or asyncio.get_event_loop()
-        self._session = ClientSession(loop=loop_, **kwargs)
-        self.base_url = base_url or BASE_URL
-        self.upload_url = upload_url or UPLOAD_URL
+    def __init__(self, session: aiohttp.ClientSession = None, **kwargs) -> None:        
+        self._session = session or ClientSession(**kwargs)
 
     async def _determine_url(self, upload: bool) -> str:
 
@@ -77,7 +62,7 @@ class YouTubeAPIResponse:
         Object for an http response from the YouTube Data API
 
         All client coroutines will return this object that encapsulates
-        any json or binary data in addition to the http status code.
+        the HTTP status code, returned data, and headers.
 
         Parent(s):
             None
