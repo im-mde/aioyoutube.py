@@ -1,7 +1,7 @@
 import asyncio, aiohttp, json, ast
 from asyncio import AbstractEventLoop
 from aiohttp import ClientSession
-
+from typing import Optional, MutableMapping
 from .http import YouTubeAPISession, YouTubeAPIResponse
 from .parse import build_endpoint
 from .valid import RATINGS
@@ -25,40 +25,45 @@ class YouTubeAPIClient:
         
         Attribute(s):
             key type(str): YouTube API key
-            exceptions type(bool): flag turning on or off library specific exceptions
+            http_exceptions type(bool): flag turning on or off http specific exceptions
     """
 
-    def __init__(self, key: str, exceptions: bool = False):
+    def __init__(self, key: str, http_exceptions: bool = False) -> None:
 
         if key == None:
             raise YouTubeKeyNoneException
 
         self._key = key
-        self._exceptions = exceptions
+        self._exceptions = http_exceptions
         self._session = None
 
     @classmethod
-    def from_connect(cls, key: str, exceptions: bool = False, loop: AbstractEventLoop = None):
+    def from_connect(
+        cls, 
+        key: str, 
+        http_exceptions: bool = False, 
+        session: aiohttp.ClientSession = None
+    ) -> classmethod:
         
-        class_ = cls(key, exceptions)
-        loop_ = loop or asyncio.get_event_loop()
-        class_._session = YouTubeAPISession(loop=loop_)
+        class_ = cls(key, http_exceptions)
+        session_ = session or ClientSession()
+        class_._session = YouTubeAPISession(session=session_)
         return class_
 
     @property
-    def key(self):
+    def key(self) -> str:
         return self._key
 
     @key.setter
-    def key(self, value: str):
+    def key(self, value: str) -> None:
         self._key = value
 
-    def connect(self, loop: AbstractEventLoop = None):
-        
-        loop_ = loop or asyncio.get_event_loop()
-        self._session = YouTubeAPISession(loop=loop_)
+    def connect(self, session: aiohttp.ClientSession = None) -> None:
 
-    async def close(self):
+        session_ = session or ClientSession()
+        self._session = YouTubeAPISession(session=session_)
+
+    async def close(self) -> None:
         await self._session.close()
 
 
@@ -75,19 +80,25 @@ class YouTubeClient(YouTubeAPIClient):
         
         Attribute(s):
             key type(str): YouTube API key 
-            exceptions type(bool): flag turning on or off library specific exceptions
+            http_exceptions type(bool): flag turning on or off http specific exceptions
     """
 
-    def __init__(self, key: str, exceptions: bool = False):
-        super().__init__(key, exceptions)
+    def __init__(self, key: str, http_exceptions: bool = False) -> None:
+        super().__init__(key, http_exceptions)
 
-    async def search(self, search: str, **kwargs):
+    async def search(self, search: str, **kwargs) -> YouTubeAPIResponse:
         return await self.list_(resource='search', part=['snippet'], 
             q=search, **kwargs)        
 
-    async def list_(self, resource, part: list, **kwargs):
+    async def list_(
+        self, 
+        resource: str, 
+        part: list, 
+        **kwargs
+    ) -> YouTubeAPIResponse:
 
-        endpoint = build_endpoint(resource=resource, key=self._key, part=part, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, 
+            part=part, **kwargs)
         result = await self._session.request(method='GET', endpoint=endpoint)
 
         data = ast.literal_eval(result[1].decode('UTF8'))
@@ -111,36 +122,53 @@ class YouTubeAuthClient(YouTubeAPIClient):
         Attribute(s):
             key type(str): YouTube API key
             token type(str): OAuth2 Access token
-            exceptions type(bool): flag turning on or off library specific exceptions
+            http_exceptions type(bool): flag turning on or off http specific exceptions
     """
 
-    def __init__(self, key: str, token: str, exceptions: bool = False):
+    def __init__(
+        self, 
+        key: str, 
+        token: str, 
+        http_exceptions: bool = False
+    ) -> None:
 
         if token == None:
             raise OAuthTokenNoneException
         
         self._token = token
-        super().__init__(key, exceptions)
+        super().__init__(key, http_exceptions)
     
     @classmethod
-    def from_token_connect(cls, key: str, token: str, exceptions: bool = False, loop: AbstractEventLoop = None):
+    def from_token_connect(
+        cls, 
+        key: str, 
+        token: str, 
+        http_exceptions: bool = False, 
+        session: aiohttp.ClientSession = None
+    ) -> classmethod:
         
-        class_ = cls(key, token, exceptions)
-        loop_ = loop or asyncio.get_event_loop()
-        class_._session = YouTubeAPISession(loop=loop_)
+        class_ = cls(key, token, http_exceptions)
+        session_ = session or ClientSession()
+        class_._session = YouTubeAPISession(session=session_)
         return class_
 
     @property
-    def token(self):
+    def token(self) -> str:
         return self._token
 
     @token.setter
-    def token(self, value: str):
+    def token(self, value: str) -> None:
         self._token = value
 
-    async def list_(self, resource: str, part: list, **kwargs):
+    async def list_(
+        self, 
+        resource: str, 
+        part: list, 
+        **kwargs
+    ) -> YouTubeAPIResponse:
 
-        endpoint = build_endpoint(resource=resource, key=self._key, part=part, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, 
+            part=part, **kwargs)
         
         result = await self._session.request(
             method='GET', 
@@ -153,9 +181,18 @@ class YouTubeAuthClient(YouTubeAPIClient):
             await is_http_exception(result[0], data)
         return YouTubeAPIResponse(result[0], data, result[2])
 
-    async def insert(self, resource: str, data: dict, media: bytes = None, part: list = [], method: str = None, **kwargs):
+    async def insert(
+        self, 
+        resource: str, 
+        data: dict, 
+        media: Optional[bytes] = None, 
+        part: Optional[list] = [], 
+        method: Optional[str] = None, 
+        **kwargs
+    ) -> YouTubeAPIResponse:
         
-        endpoint = build_endpoint(resource=resource, key=self._key, part=part, method=method, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, 
+            part=part, method=method, **kwargs)
         
         if media == None:
             
@@ -189,7 +226,13 @@ class YouTubeAuthClient(YouTubeAPIClient):
                     await is_http_exception(result[0], result[1])
                 return YouTubeAPIResponse(result[0], result[1], result[2])
 
-    async def update(self, resource: str, data: dict, part: list = [], **kwargs):
+    async def update(
+        self, 
+        resource: str, 
+        data: MutableMapping, 
+        part: Optional[list] = [], 
+        **kwargs
+    ) -> YouTubeAPIResponse:
         
         endpoint = build_endpoint(resource=resource, key=self._key, part=part, **kwargs)
         
@@ -205,7 +248,12 @@ class YouTubeAuthClient(YouTubeAPIClient):
             await is_http_exception(result[0], data)
         return YouTubeAPIResponse(result[0], data, result[2])
 
-    async def rate(self, resource: str, rating: str, **kwargs):
+    async def rate(
+        self, 
+        resource: str, 
+        rating: str, 
+        **kwargs
+    ) -> YouTubeAPIResponse:
         
         if rating not in RATINGS:
             raise RatingInvalidException
@@ -223,7 +271,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
             await is_http_exception(result[0], result[1])
         return YouTubeAPIResponse(result[0], None, result[2])
 
-    async def getRating(self, resource: str, **kwargs):
+    async def getRating(self, resource: str, **kwargs) -> YouTubeAPIResponse:
         
         endpoint = build_endpoint(resource=resource, key=self._key, method='getRating', **kwargs)
 
@@ -238,7 +286,12 @@ class YouTubeAuthClient(YouTubeAPIClient):
             await is_http_exception(result[0], data)
         return YouTubeAPIResponse(result[0], data, result[2])
         
-    async def reportAbuse(self, resource: str, data: dict, **kwargs):
+    async def reportAbuse(
+        self, 
+        resource: str, 
+        data: MutableMapping, 
+        **kwargs
+    ) -> YouTubeAPIResponse:
         
         endpoint = build_endpoint(resource=resource, key=self._key, method='reportAbuse' **kwargs)
 
@@ -253,7 +306,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
             await is_http_exception(result[0], result[1])
         return YouTubeAPIResponse(result[0], None, result[2])
 
-    async def delete(self, resource: str, **kwargs):
+    async def delete(self, resource: str, **kwargs) -> YouTubeAPIResponse:
 
         endpoint = build_endpoint(resource=resource, key=self._key, **kwargs)
 
@@ -267,7 +320,12 @@ class YouTubeAuthClient(YouTubeAPIClient):
             await is_http_exception(result[0], result[1])
         return YouTubeAPIResponse(result[0], None, result[2])
 
-    async def set_(self, resource: str, data: bytes, **kwargs):
+    async def set_(
+        self, 
+        resource: str, 
+        data: bytes, 
+        **kwargs
+    ) -> YouTubeAPIResponse:
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='set', **kwargs)
 
@@ -285,7 +343,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
             await is_http_exception(result[0], data)
         return YouTubeAPIResponse(result[0], data, result[2])
 
-    async def unset(self, resource: str, **kwargs):
+    async def unset(self, resource: str, **kwargs) -> YouTubeAPIResponse:
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='unset', **kwargs)
 
@@ -300,7 +358,12 @@ class YouTubeAuthClient(YouTubeAPIClient):
             await is_http_exception(result[0], result[1])
         return YouTubeAPIResponse(result[0], None, result[2])
 
-    async def download(self, resource: str, method: str = None, **kwargs):
+    async def download(
+        self, 
+        resource: str, 
+        method: Optional[str] = None,
+        **kwargs
+    ) -> YouTubeAPIResponse:
 
         endpoint = build_endpoint(resource=resource, key=self._key, method=method, **kwargs)
 
@@ -314,7 +377,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
             await is_http_exception(result[0], result[1])
         return YouTubeAPIResponse(result[0], result[1], result[2])
 
-    async def markAsSpam(self, resource: str, **kwargs):
+    async def markAsSpam(self, resource: str, **kwargs) -> YouTubeAPIResponse:
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='markAsSpam' **kwargs)
 
@@ -328,7 +391,11 @@ class YouTubeAuthClient(YouTubeAPIClient):
             await is_http_exception(result[0], result[1])
         return YouTubeAPIResponse(result[0], None, result[2])
 
-    async def setModerationStatus(self, resource: str, **kwargs):
+    async def setModerationStatus(
+        self, 
+        resource: str, 
+        **kwargs
+    ) -> YouTubeAPIResponse:
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='setModerationStatus' **kwargs)
 
@@ -358,13 +425,24 @@ class YouTubeHybridClient(YouTubeAuthClient, YouTubeClient):
         Attribute(s):
             key type(str): YouTube API key 
             token type(str): Access token
-            exceptions type(bool): flag turning on or off library specific exceptions
+            http_exceptions type(bool): flag turning on or off http specific exceptions
     """
 
-    def __init__(self, key: str, token: str, exceptions: bool = False):
-        super().__init__(key, token, exceptions)
+    def __init__(
+        self, 
+        key: str, 
+        token: str, 
+        http_exceptions: bool = False
+    ) -> None:
+        super().__init__(key, token, http_exceptions)
 
-    async def list_(self, resource: str, part: list, auth: bool = True, **kwargs):
+    async def list_(
+        self, 
+        resource: str, 
+        part: list, 
+        auth: bool = True, 
+        **kwargs
+    ) -> YouTubeAPIResponse:
         
         if auth:
             return await super().list_(resource, part, **kwargs)
