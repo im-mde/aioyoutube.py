@@ -1,4 +1,4 @@
-import asyncio, aiohttp, json
+import asyncio, aiohttp, json, ast
 from asyncio import AbstractEventLoop
 from aiohttp import ClientSession
 
@@ -6,7 +6,7 @@ from .http import YouTubeAPISession, YouTubeAPIResponse
 from .parse import build_endpoint
 from .valid import RATINGS
 from .exceptions import (
-    find_http_exception, 
+    is_http_exception, 
     RatingInvalidException,
     ResourceInvalidException,
     YouTubeKeyNoneException,
@@ -88,10 +88,13 @@ class YouTubeClient(YouTubeAPIClient):
     async def list_(self, resource, part: list, **kwargs):
 
         endpoint = build_endpoint(resource=resource, key=self._key, part=part, **kwargs)
-        result = await self._session.get(endpoint=endpoint)
+        result = await self._session.request(method='GET', endpoint=endpoint)
 
-        if self._exceptions == True: await find_http_exception(result)
-        return YouTubeAPIResponse(await result.json(), result.status, None)
+        data = ast.literal_eval(result[1].decode('UTF8'))
+        if self._exceptions == True: 
+            await is_http_exception(result[0], data)
+
+        return YouTubeAPIResponse(result[0], data, result[2])
 
 
 class YouTubeAuthClient(YouTubeAPIClient):
@@ -138,134 +141,206 @@ class YouTubeAuthClient(YouTubeAPIClient):
     async def list_(self, resource: str, part: list, **kwargs):
 
         endpoint = build_endpoint(resource=resource, key=self._key, part=part, **kwargs)
-        result = await self._session.get(endpoint=endpoint, headers={
-            'Authorization': 'Bearer {}'.format(self._token)})
+        
+        result = await self._session.request(
+            method='GET', 
+            endpoint=endpoint,
+            headers={'Authorization': 'Bearer {}'.format(self._token)}
+        )
 
-        if self._exceptions == True: await find_http_exception(result)
-        return YouTubeAPIResponse(await result.json(), result.status, None)
+        data = ast.literal_eval(result[1].decode('UTF8'))
+        if self._exceptions == True: 
+            await is_http_exception(result[0], data)
+        return YouTubeAPIResponse(result[0], data, result[2])
 
     async def insert(self, resource: str, data: dict, media: bytes = None, part: list = [], method: str = None, **kwargs):
         
         endpoint = build_endpoint(resource=resource, key=self._key, part=part, method=method, **kwargs)
         
-        if media != None:
+        if media == None:
+            
+            result = await self._session.request(
+                method='POST',
+                endpoint=endpoint,
+                headers={'Authorization': 'Bearer {}'.format(self._token)},
+                body=json.dumps(data)
+            )
+
+            data = ast.literal_eval(result[1].decode('UTF8'))
+            if self._exceptions == True: 
+                await is_http_exception(result[0], data)
+            return YouTubeAPIResponse(result[0], data, result[2])
+        else:
             with aiohttp.MultipartWriter('form-data') as mpw:
                 mpw.append_json(data)
                 mpw.append(media, {'Content-Type': 'application/octet-stream'})
-                
-                result = await self._session.post(endpoint=endpoint, data=mpw, upload=True,
-                    headers={'Authorization': 'Bearer {}'.format(self._token)})
 
-                if self._exceptions == True: await find_http_exception(result) 
-                return YouTubeAPIResponse(await result.json(), result.status, None)
-        else:
-            result = await self._session.post(endpoint=endpoint, data=json.dumps(data),
-                headers={'Authorization': 'Bearer {}'.format(self._token)})
-            
-            if self._exceptions == True: await find_http_exception(result)
-            return YouTubeAPIResponse(await result.json(), result.status, None)
+                result = await self._session.request(
+                    method='POST',
+                    endpoint=endpoint,
+                    upload=True,
+                    headers={'Authorization': 'Bearer {}'.format(self._token)},
+                    body=mpw
+                )
+
+                # TODO: look at why this is not decoding. will be commented out for now
+                #data = ast.literal_eval(result[1].decode('UTF8'))
+                if self._exceptions == True: 
+                    await is_http_exception(result[0], result[1])
+                return YouTubeAPIResponse(result[0], result[1], result[2])
 
     async def update(self, resource: str, data: dict, part: list = [], **kwargs):
         
         endpoint = build_endpoint(resource=resource, key=self._key, part=part, **kwargs)
-        result = await self._session.put(endpoint=endpoint, data=json.dumps(data), 
-            headers={'Authorization': 'Bearer {}'.format(self._token),
-                'Content-Type': 'application/json'})
+        
+        result = await self._session.request(
+            method='PUT', 
+            endpoint=endpoint, 
+            body=json.dumps(data), 
+            headers={'Authorization': 'Bearer {}'.format(self._token)}
+        )
 
-        if self._exceptions == True: await find_http_exception(result)
-        return YouTubeAPIResponse(await result.json(), result.status, None)
+        data = ast.literal_eval(result[1].decode('UTF8'))
+        if self._exceptions == True: 
+            await is_http_exception(result[0], data)
+        return YouTubeAPIResponse(result[0], data, result[2])
 
     async def rate(self, resource: str, rating: str, **kwargs):
         
         if rating not in RATINGS:
             raise RatingInvalidException
-
-        endpoint = build_endpoint(resource=resource, key=self._key, method='rate', rating=rating, **kwargs)
-        result = await self._session.post(endpoint=endpoint, headers={
-            'Authorization': 'Bearer {}'.format(self._token)})
         
-        if self._exceptions == True: await find_http_exception(result)
-        return YouTubeAPIResponse(await result.json(), result.status, None)
+        endpoint = build_endpoint(resource=resource, key=self._key, method='rate', rating=rating, **kwargs)
+        
+        result = await self._session.request(
+            method='POST', 
+            endpoint=endpoint, 
+            headers={'Authorization': 'Bearer {}'.format(self._token), 
+                'Accept': 'application/json'}
+        )
+ 
+        if self._exceptions == True: 
+            await is_http_exception(result[0], result[1])
+        return YouTubeAPIResponse(result[0], None, result[2])
 
     async def getRating(self, resource: str, **kwargs):
         
         endpoint = build_endpoint(resource=resource, key=self._key, method='getRating', **kwargs)
-        result = await self._session.get(endpoint=endpoint, 
-            headers={'Authorization': 'Bearer {}'.format(self._token)})
+
+        result = await self._session.request(
+            method='GET',
+            endpoint=endpoint,
+            headers={'Authorization': 'Bearer {}'.format(self._token)}
+        )
         
-        if self._exceptions == True: await find_http_exception(result)
-        return YouTubeAPIResponse(await result.json(), result.status, None)
+        data = ast.literal_eval(result[1].decode('UTF8'))
+        if self._exceptions == True: 
+            await is_http_exception(result[0], data)
+        return YouTubeAPIResponse(result[0], data, result[2])
         
     async def reportAbuse(self, resource: str, data: dict, **kwargs):
         
         endpoint = build_endpoint(resource=resource, key=self._key, method='reportAbuse' **kwargs)
-        result = await self._session.post(endpoint=endpoint, data=data,
-            headers={'Authorization': 'Bearer {}'.format(self._token)})
+
+        result = await self._session.request(
+            method='POST',
+            endpoint=endpoint,
+            body=json.dumps(data),
+            headers={'Authorization': 'Bearer {}'.format(self._token)},
+        )
         
-        if self._exceptions == True: await find_http_exception(result)
-        return YouTubeAPIResponse(await result.json(), result.status, None)
+        if self._exceptions == True: 
+            await is_http_exception(result[0], result[1])
+        return YouTubeAPIResponse(result[0], None, result[2])
 
     async def delete(self, resource: str, **kwargs):
 
         endpoint = build_endpoint(resource=resource, key=self._key, **kwargs)
-        result = await self._session.delete(endpoint=endpoint, 
-            headers={'Authorization': 'Bearer {}'.format(self._token)})
-        
-        if self._exceptions == True: await find_http_exception(result)
-        return YouTubeAPIResponse(await result.json(), result.status, None)
+
+        result = await self._session.request(
+            method='DELETE',
+            endpoint=endpoint,
+            headers={'Authorization': 'Bearer {}'.format(self._token)}
+        )
+
+        if self._exceptions == True: 
+            await is_http_exception(result[0], result[1])
+        return YouTubeAPIResponse(result[0], None, result[2])
 
     async def set_(self, resource: str, data: bytes, **kwargs):
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='set', **kwargs)
-        result = await self._session.post(endpoint=endpoint, data=data, upload=True,
-            headers={'Authorization': 'Bearer {}'.format(self._token),
-                'Content-Type': 'application/octet-stream',
-                'Content-Length': str(len(data))})
 
-        if self._exceptions == True: await find_http_exception(result)
-        return YouTubeAPIResponse(await result.json(), result.status, None)
+        result = await self._session.request(
+            method='POST',
+            endpoint=endpoint,
+            upload=True,
+            headers={'Authorization': 'Bearer {}'.format(self._token),
+                'Content-Type': 'application/octet-stream'},
+            body=data
+        )
+
+        data = ast.literal_eval(result[1].decode('UTF8'))
+        if self._exceptions == True: 
+            await is_http_exception(result[0], data)
+        return YouTubeAPIResponse(result[0], data, result[2])
 
     async def unset(self, resource: str, **kwargs):
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='unset', **kwargs)
-        result = await self._session.post(endpoint=endpoint, headers={
-            'Authorization': 'Bearer {}'.format(self._token)})
 
-        if self._exceptions == True: await find_http_exception(result)
-        return YouTubeAPIResponse(await result.json(), result.status, None)
+        result = await self._session.request(
+            method='POST',
+            endpoint=endpoint,
+            upload=True,
+            headers={'Authorization': 'Bearer {}'.format(self._token)}
+        )
+
+        if self._exceptions == True: 
+            await is_http_exception(result[0], result[1])
+        return YouTubeAPIResponse(result[0], None, result[2])
 
     async def download(self, resource: str, method: str = None, **kwargs):
 
         endpoint = build_endpoint(resource=resource, key=self._key, method=method, **kwargs)
-        result = await self._session.get(endpoint=endpoint, headers={
-            'Authorization': 'Bearer {}'.format(self._token)})
 
-        # this is necessary because in a good request, the returned content will only be binary data and
-        # causes an exception if you try to call the json() coroutine
+        result = await self._session.request(
+            method='GET',
+            endpoint=endpoint,
+            headers={'Authorization': 'Bearer {}'.format(self._token)}
+        )
 
-        try:
-            if self._exceptions == True: await find_http_exception(result)
-            return YouTubeAPIResponse(await result.json(), result.status, await result.read())
-        except:
-            return YouTubeAPIResponse(None, result.status, await result.read())
+        if self._exceptions == True: 
+            await is_http_exception(result[0], result[1])
+        return YouTubeAPIResponse(result[0], result[1], result[2])
 
     async def markAsSpam(self, resource: str, **kwargs):
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='markAsSpam' **kwargs)
-        result = await self._session.post(endpoint=endpoint, headers={
-            'Authorization': 'Bearer {}'.format(self._token)})
 
-        if self._exceptions == True: await find_http_exception(result)
-        return YouTubeAPIResponse(await result.json(), result.status, None)
+        result = await self._session.request(
+            method='POST',
+            endpoint=endpoint,
+            headers={'Authorization': 'Bearer {}'.format(self._token)}
+        )
+
+        if self._exceptions == True: 
+            await is_http_exception(result[0], result[1])
+        return YouTubeAPIResponse(result[0], None, result[2])
 
     async def setModerationStatus(self, resource: str, **kwargs):
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='setModerationStatus' **kwargs)
-        result = await self._session.post(endpoint=endpoint, headers={
-            'Authorization': 'Bearer {}'.format(self._token)})
 
-        if self._exceptions == True: await find_http_exception(result)
-        return YouTubeAPIResponse(await result.json(), result.status, None)
+        result = await self._session.request(
+            method='POST',
+            endpoint=endpoint,
+            headers={'Authorization': 'Bearer {}'.format(self._token)}
+        )
+
+        if self._exceptions == True: 
+            await is_http_exception(result[0], result[1])
+        return YouTubeAPIResponse(result[0], None, result[2])
 
 
 class YouTubeHybridClient(YouTubeAuthClient, YouTubeClient):
@@ -289,7 +364,8 @@ class YouTubeHybridClient(YouTubeAuthClient, YouTubeClient):
     def __init__(self, key: str, token: str, exceptions: bool = False):
         super().__init__(key, token, exceptions)
 
-    async def list_(self, resource: str, part: str, auth: bool = True, **kwargs):
+    async def list_(self, resource: str, part: list, auth: bool = True, **kwargs):
+        
         if auth:
             return await super().list_(resource, part, **kwargs)
         else:

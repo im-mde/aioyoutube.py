@@ -1,10 +1,16 @@
+import ast
+
 from .http import YouTubeAPIResponse
 from .valid import get_youtube_resources, get_ratings
 
-async def find_http_exception(response: YouTubeAPIResponse):
-    
-    if response.status != 200:
-        raise HTTPException(response.status, await response.json())
+async def is_http_exception(status: int, data):
+
+    if status < 200 or status >= 300:
+        data_ = data
+        if type(data_) == bytes:
+            data_= ast.literal_eval(data_.decode('UTF8'))
+            print(data_)
+        raise HTTPException(status, data_)
     else:
         return
 
@@ -13,7 +19,7 @@ class HTTPException(Exception):
     """
         HTTP exception for the YouTube Data API.
         
-        This exception is raised if the response status is not 200.
+        This exception is raised if the response status is not between 200 and 299.
 
         Parent(s):
             Exception
@@ -25,7 +31,8 @@ class HTTPException(Exception):
 
     def __init__(self, status: int, json: dict):
         
-        self.message = 'Status {}: {}'.format(str(status), json['error']['message'])
+        self.message = 'Status {}: {}'.format(
+            str(status), json['error']['message'])
         super().__init__(self.message)
 
 
@@ -65,7 +72,8 @@ class ResourceInvalidException(YouTubeAPIException):
 
     def __init__(self):
         
-        self.message = 'Resource argument must be one of: {}'.format(get_youtube_resources())
+        self.message = 'Resource argument must be one of: {}'.format(
+            get_youtube_resources())
         super().__init__(self.message)
 
 
@@ -86,7 +94,8 @@ class RatingInvalidException(YouTubeAPIException):
 
     def __init__(self):
         
-        self.message = 'Rating argument must be one of: {}'.format(get_ratings())
+        self.message = 'Rating argument must be one of: {}'.format(
+            get_ratings())
         super().__init__(self.message)
 
 

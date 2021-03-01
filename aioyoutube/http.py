@@ -1,5 +1,6 @@
 import asyncio
-from typing import Any
+
+from typing import Any, Optional, MutableMapping, Tuple, Union
 from asyncio import AbstractEventLoop
 from aiohttp import ClientSession
 from aiohttp.typedefs import StrOrURL
@@ -26,47 +27,48 @@ class YouTubeAPISession():
             upload_url type(str): url pointing to the upload portion of the YouTube Data API 
     """
 
-    def __init__(self, loop: AbstractEventLoop = None, base_url: str = None, upload_url: str = None, **kwargs):
+    def __init__(
+        self, 
+        loop: AbstractEventLoop = None, 
+        base_url: str = None, 
+        upload_url: str = None, 
+        **kwargs
+    ) -> None:
 
         loop_ = loop or asyncio.get_event_loop()
         self._session = ClientSession(loop=loop_, **kwargs)
         self.base_url = base_url or BASE_URL
         self.upload_url = upload_url or UPLOAD_URL
 
-    async def get(self, endpoint: StrOrURL, *, allow_redirects: bool = True, **kwargs):
+    async def _determine_url(self, upload: bool) -> str:
 
-        if 'https://www.googleapis.com' not in endpoint:
-            return await self._session.get(url=self.base_url + endpoint, allow_redirects=allow_redirects, **kwargs)
+        if upload:
+            return UPLOAD_URL
         else:
-            return await self._session.get(url=endpoint, allow_redirects=allow_redirects, **kwargs)
+            return BASE_URL
+
+    async def request(
+        self, 
+        method: str, 
+        endpoint: str,
+        upload: bool = False, 
+        headers: Optional[MutableMapping] = None,
+        body: Optional[Union[MutableMapping, bytes]] = None,
+    ) -> Tuple[int, bytes, MutableMapping]:
         
-    async def put(self, endpoint: StrOrURL, *, data: Any = None, **kwargs: Any):
+        url = await self._determine_url(upload) + endpoint
+
+        async with self._session.request(
+            method, url, headers=headers, data=body) as response:
+                return response.status, await response.read(), response.headers
+
+    async def close(self) -> bool:
         
-        if 'https://www.googleapis.com' not in endpoint:
-            return await self._session.put(url=self.base_url + endpoint, data=data, **kwargs)
-        else:
-            return await self._session.put(url=endpoint, data=data)
-
-    async def post(self, endpoint: StrOrURL, * , data: Any = None, upload: bool = False, **kwargs: Any):
-
-        if 'https://www.googleapis.com' not in endpoint:
-            if upload:
-                return await self._session.post(url=self.upload_url + endpoint, data=data, **kwargs)
-            else:
-                return await self._session.post(url=self.base_url + endpoint, data=data, **kwargs)
-        else:
-            return await self._session.post(url=endpoint, data=data, **kwargs)
-
-    async def delete(self, endpoint: StrOrURL, **kwargs: Any):
-        
-        if 'https://www.googleapis.com' not in endpoint:
-            return await self._session.delete(url=self.base_url + endpoint, **kwargs)
-        else:
-            return await self._session.post(url=endpoint, **kwargs)
-
-    async def close(self):
         if not self._session.closed:
             await self._session.close()
+            return True
+        else:
+            return False
 
 
 class YouTubeAPIResponse:
@@ -81,25 +83,30 @@ class YouTubeAPIResponse:
             None
 
         Attribute(s):
-            json type(dict): json returned from an http request
             status type(int): http response status code for http request
-            data type(bytes): binary data returned from http request
+            data type(Union[MutableMapping, bytes]): data returned from http request
+            headers type(MutableMapping): headers returned from http request
     """
 
-    def __init__(self, json: dict, status: int, data: bytes = None):
+    def __init__(
+        self, 
+        status: int, 
+        data: Union[MutableMapping, bytes], 
+        headers: MutableMapping
+    ) -> None:
         
-        self._json = json
         self._status = status
         self._data = data
+        self._headers = headers
     
     @property
-    def json(self):
-        return self._json
+    def data(self) -> [MutableMapping, bytes]:
+        return self._data
 
     @property
-    def status(self):
+    def status(self) -> int:
         return self._status
     
     @property
-    def data(self):
-        return self._data
+    def headers(self) -> MutableMapping:
+        return self._headers
