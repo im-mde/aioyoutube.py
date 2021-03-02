@@ -29,8 +29,8 @@ YOUTUBE_RESOURCES = frozenset({
     'activity'
 })
 
-def get_youtube_resources():
+def get_youtube_resources() -> list:
     return list(YOUTUBE_RESOURCES)
 
-def get_ratings():
+def get_ratings() -> list:
     return list(RATINGS)

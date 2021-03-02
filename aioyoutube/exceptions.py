@@ -1,9 +1,12 @@
 import ast
-
+from typing import Union, MutableMapping
 from .http import YouTubeAPIResponse
 from .valid import get_youtube_resources, get_ratings
 
-async def is_http_exception(status: int, data):
+async def is_http_exception(
+    status: int, 
+    data: Union[MutableMapping, bytes]
+) -> None:
 
     if status < 200 or status >= 300:
         data_ = data
@@ -26,10 +29,10 @@ class HTTPException(Exception):
 
         Attribute(s):
             status type(int): status status of http response
-            json type(dict): json of http response
+            json type(MutableMapping): json of http response
     """
 
-    def __init__(self, status: int, json: dict):
+    def __init__(self, status: int, json: MutableMapping) -> None:
         
         self.message = 'Status {}: {}'.format(
             str(status), json['error']['message'])
@@ -51,7 +54,7 @@ class YouTubeAPIException(Exception):
             message type(str): string displaying information about the error.
     """
 
-    def __init__(self, message: str):
+    def __init__(self, message: str) -> None:
         super().__init__(message)
 
 
@@ -70,7 +73,7 @@ class ResourceInvalidException(YouTubeAPIException):
             None
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         
         self.message = 'Resource argument must be one of: {}'.format(
             get_youtube_resources())
@@ -92,7 +95,7 @@ class RatingInvalidException(YouTubeAPIException):
             None
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         
         self.message = 'Rating argument must be one of: {}'.format(
             get_ratings())
@@ -114,7 +117,7 @@ class NoneValueException(Exception):
             None
     """
 
-    def __init__(self, message: str):
+    def __init__(self, message: str) -> None:
         super().__init__(message)
 
 
@@ -133,7 +136,7 @@ class YouTubeKeyNoneException(NoneValueException):
             None
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
 
         self.message = 'YouTube API key is set to "None"'
         super().__init__(self.message)
@@ -154,7 +157,7 @@ class OAuthTokenNoneException(NoneValueException):
             None
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
 
         self.message = 'OAuth token is set to "None"'
         super().__init__(self.message)

@@ -1,9 +1,14 @@
+from typing import Optional
 from .valid import YOUTUBE_RESOURCES
 from .exceptions import ResourceInvalidException
 
+
 # takes youtube resource and returns the equivalent url resource
 
-def parse_resource(resource: str, method: str = ''):    
+def parse_resource(
+    resource: str, 
+    method: Optional[str] = ''
+) -> str:    
 
     resource_ = resource
     if 'youtube#' in resource:
@@ -25,7 +30,13 @@ def parse_resource(resource: str, method: str = ''):
 
 # generates a youtube api url from a youtube resource, other required parameters, and key word arguments
 
-def build_endpoint(resource: str, key: str, part: list = [], method: str = None, **kwargs):
+def build_endpoint(
+    resource: str, 
+    key: str, 
+    part: Optional[list] = [], 
+    method: Optional[str] = None, 
+    **kwargs
+) -> str:
     
     resource = parse_resource(resource=resource)    
     if method != None: resource += '/' + method

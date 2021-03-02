@@ -1,5 +1,4 @@
-import asyncio, aiohttp, json, ast
-from asyncio import AbstractEventLoop
+import aiohttp, json, ast
 from aiohttp import ClientSession
 from typing import Optional, MutableMapping
 from .http import YouTubeAPISession, YouTubeAPIResponse
@@ -26,6 +25,7 @@ class YouTubeAPIClient:
         Attribute(s):
             key type(str): YouTube API key
             http_exceptions type(bool): flag turning on or off http specific exceptions
+            session type(aiohttp.ClientSession): async http session from aiohttp library
     """
 
     def __init__(self, key: str, http_exceptions: bool = False) -> None:
@@ -81,6 +81,7 @@ class YouTubeClient(YouTubeAPIClient):
         Attribute(s):
             key type(str): YouTube API key 
             http_exceptions type(bool): flag turning on or off http specific exceptions
+            session type(aiohttp.ClientSession): async http session from aiohttp library
     """
 
     def __init__(self, key: str, http_exceptions: bool = False) -> None:
@@ -123,6 +124,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
             key type(str): YouTube API key
             token type(str): OAuth2 Access token
             http_exceptions type(bool): flag turning on or off http specific exceptions
+            session type(aiohttp.ClientSession): async http session from aiohttp library
     """
 
     def __init__(
@@ -426,6 +428,7 @@ class YouTubeHybridClient(YouTubeAuthClient, YouTubeClient):
             key type(str): YouTube API key 
             token type(str): Access token
             http_exceptions type(bool): flag turning on or off http specific exceptions
+            session type(aiohttp.ClientSession): async http session from aiohttp library
     """
 
     def __init__(
