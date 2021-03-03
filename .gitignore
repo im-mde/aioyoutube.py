@@ -2,6 +2,7 @@
 *.json
 .env
 .vscode/
+*.code-workspace
 __py_cache__/
 *.egg-info/
 build/
