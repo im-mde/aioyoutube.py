@@ -166,7 +166,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
             key type(str): YouTube API key
             token type(str): OAuth2 Access token
             http_exceptions type(bool): flag turning on or off http specific exceptions
-            session type(aiohttp.ClientSession): async http session from aiohttp library
+            client_session type(aiohttp.ClientSession): async http session from aiohttp library
     """
 
     def __init__(
@@ -188,10 +188,11 @@ class YouTubeAuthClient(YouTubeAPIClient):
         cls, 
         key: str, 
         token: str, 
-        http_exceptions: bool = False, 
-        client_session: aiohttp.ClientSession = None
+        client_session: aiohttp.ClientSession = None,
+        http_exceptions: bool = False
     ) -> classmethod:
-        
+
+        print(cls)
         class_ = cls(key, token, client_session, http_exceptions)
         class_.connect(session=class_._csession)
         return class_
@@ -470,16 +471,17 @@ class YouTubeHybridClient(YouTubeAuthClient, YouTubeClient):
             key type(str): YouTube API key 
             token type(str): Access token
             http_exceptions type(bool): flag turning on or off http specific exceptions
-            session type(aiohttp.ClientSession): async http session from aiohttp library
+            client_session type(aiohttp.ClientSession): async http session from aiohttp library
     """
 
     def __init__(
         self, 
         key: str, 
-        token: str, 
+        token: str,
+        client_session: aiohttp.ClientSession = None,
         http_exceptions: bool = False
     ) -> None:
-        super().__init__(key, token, http_exceptions)
+        super().__init__(key, token, client_session, http_exceptions)
 
     async def list_(
         self, 
