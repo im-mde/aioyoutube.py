@@ -53,29 +53,33 @@ class YouTubeAPIClient:
         Attribute(s):
             key type(str): YouTube API key
             http_exceptions type(bool): flag turning on or off http specific exceptions
-            session type(aiohttp.ClientSession): async http session from aiohttp library
+            client_session type(aiohttp.ClientSession): async http session from aiohttp library
     """
 
-    def __init__(self, key: str, http_exceptions: bool = False) -> None:
+    def __init__(
+        self, 
+        key: str,
+        client_session: aiohttp.ClientSession = None, 
+        http_exceptions: bool = False
+    ) -> None:
 
         if key == None:
             raise YouTubeKeyNoneException
 
         self._key = key
+        self._csession = client_session
         self._exceptions = http_exceptions
-        self._session = None
 
     @classmethod
     def from_connect(
         cls, 
         key: str, 
         http_exceptions: bool = False, 
-        session: aiohttp.ClientSession = None
+        client_session: aiohttp.ClientSession = None
     ) -> classmethod:
-        
-        class_ = cls(key, http_exceptions)
-        session_ = session or ClientSession()
-        class_._session = YouTubeAPISession(session=session_)
+
+        class_ = cls(key, client_session, http_exceptions)
+        class_.connect(session=class_._csession)
         return class_
 
     @property
@@ -86,13 +90,18 @@ class YouTubeAPIClient:
     def key(self, value: str) -> None:
         self._key = value
 
-    def connect(self, session: aiohttp.ClientSession = None) -> None:
+    async def __aenter__(self):
+        self.connect(session=self._csession)
+        return self
 
-        session_ = session or ClientSession()
-        self._session = YouTubeAPISession(session=session_)
+    async def __aexit__(self, exec_type, exec_value, exec_traceback):
+        await self.close()
+
+    def connect(self, session: aiohttp.ClientSession = None) -> None:
+        self._youtube_session = YouTubeAPISession(session=session)
 
     async def close(self) -> None:
-        await self._session.close()
+        await self._youtube_session.close()
 
 
 class YouTubeClient(YouTubeAPIClient):
@@ -109,11 +118,16 @@ class YouTubeClient(YouTubeAPIClient):
         Attribute(s):
             key type(str): YouTube API key 
             http_exceptions type(bool): flag turning on or off http specific exceptions
-            session type(aiohttp.ClientSession): async http session from aiohttp library
+            client_session type(aiohttp.ClientSession): async http session from aiohttp library
     """
 
-    def __init__(self, key: str, http_exceptions: bool = False) -> None:
-        super().__init__(key, http_exceptions)
+    def __init__(
+        self, 
+        key: str, 
+        client_session: aiohttp.ClientSession = None, 
+        http_exceptions: bool = False
+    ) -> None:
+        super().__init__(key, client_session, http_exceptions)
 
     async def search(self, search: str, **kwargs) -> YouTubeAPIResponse:
         return await self.list_(resource='search', part=['snippet'], 
@@ -128,7 +142,7 @@ class YouTubeClient(YouTubeAPIClient):
 
         endpoint = build_endpoint(resource=resource, key=self._key, 
             part=part, **kwargs)
-        result = await self._session.request(method='GET', endpoint=endpoint)
+        result = await self._youtube_session.request(method='GET', endpoint=endpoint)
 
         data = ast.literal_eval(result[1].decode('UTF8'))
         if self._exceptions == True: 
@@ -152,13 +166,14 @@ class YouTubeAuthClient(YouTubeAPIClient):
             key type(str): YouTube API key
             token type(str): OAuth2 Access token
             http_exceptions type(bool): flag turning on or off http specific exceptions
-            session type(aiohttp.ClientSession): async http session from aiohttp library
+            client_session type(aiohttp.ClientSession): async http session from aiohttp library
     """
 
     def __init__(
         self, 
         key: str, 
-        token: str, 
+        token: str,
+        client_session: aiohttp.ClientSession = None,  
         http_exceptions: bool = False
     ) -> None:
 
@@ -166,20 +181,20 @@ class YouTubeAuthClient(YouTubeAPIClient):
             raise OAuthTokenNoneException
         
         self._token = token
-        super().__init__(key, http_exceptions)
+        super().__init__(key, client_session, http_exceptions)
     
     @classmethod
     def from_token_connect(
         cls, 
         key: str, 
         token: str, 
-        http_exceptions: bool = False, 
-        session: aiohttp.ClientSession = None
+        client_session: aiohttp.ClientSession = None,
+        http_exceptions: bool = False
     ) -> classmethod:
-        
-        class_ = cls(key, token, http_exceptions)
-        session_ = session or ClientSession()
-        class_._session = YouTubeAPISession(session=session_)
+
+        print(cls)
+        class_ = cls(key, token, client_session, http_exceptions)
+        class_.connect(session=class_._csession)
         return class_
 
     @property
@@ -200,7 +215,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         endpoint = build_endpoint(resource=resource, key=self._key, 
             part=part, **kwargs)
         
-        result = await self._session.request(
+        result = await self._youtube_session.request(
             method='GET', 
             endpoint=endpoint,
             headers={'Authorization': 'Bearer {}'.format(self._token)}
@@ -226,7 +241,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         
         if media == None:
             
-            result = await self._session.request(
+            result = await self._youtube_session.request(
                 method='POST',
                 endpoint=endpoint,
                 headers={'Authorization': 'Bearer {}'.format(self._token)},
@@ -242,7 +257,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
                 mpw.append_json(data)
                 mpw.append(media, {'Content-Type': 'application/octet-stream'})
 
-                result = await self._session.request(
+                result = await self._youtube_session.request(
                     method='POST',
                     endpoint=endpoint,
                     upload=True,
@@ -266,7 +281,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         
         endpoint = build_endpoint(resource=resource, key=self._key, part=part, **kwargs)
         
-        result = await self._session.request(
+        result = await self._youtube_session.request(
             method='PUT', 
             endpoint=endpoint, 
             body=json.dumps(data), 
@@ -290,7 +305,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         
         endpoint = build_endpoint(resource=resource, key=self._key, method='rate', rating=rating, **kwargs)
         
-        result = await self._session.request(
+        result = await self._youtube_session.request(
             method='POST', 
             endpoint=endpoint, 
             headers={'Authorization': 'Bearer {}'.format(self._token), 
@@ -305,7 +320,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         
         endpoint = build_endpoint(resource=resource, key=self._key, method='getRating', **kwargs)
 
-        result = await self._session.request(
+        result = await self._youtube_session.request(
             method='GET',
             endpoint=endpoint,
             headers={'Authorization': 'Bearer {}'.format(self._token)}
@@ -325,7 +340,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         
         endpoint = build_endpoint(resource=resource, key=self._key, method='reportAbuse' **kwargs)
 
-        result = await self._session.request(
+        result = await self._youtube_session.request(
             method='POST',
             endpoint=endpoint,
             body=json.dumps(data),
@@ -340,7 +355,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
         endpoint = build_endpoint(resource=resource, key=self._key, **kwargs)
 
-        result = await self._session.request(
+        result = await self._youtube_session.request(
             method='DELETE',
             endpoint=endpoint,
             headers={'Authorization': 'Bearer {}'.format(self._token)}
@@ -359,7 +374,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='set', **kwargs)
 
-        result = await self._session.request(
+        result = await self._youtube_session.request(
             method='POST',
             endpoint=endpoint,
             upload=True,
@@ -377,7 +392,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='unset', **kwargs)
 
-        result = await self._session.request(
+        result = await self._youtube_session.request(
             method='POST',
             endpoint=endpoint,
             upload=True,
@@ -397,7 +412,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
         endpoint = build_endpoint(resource=resource, key=self._key, method=method, **kwargs)
 
-        result = await self._session.request(
+        result = await self._youtube_session.request(
             method='GET',
             endpoint=endpoint,
             headers={'Authorization': 'Bearer {}'.format(self._token)}
@@ -411,7 +426,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='markAsSpam' **kwargs)
 
-        result = await self._session.request(
+        result = await self._youtube_session.request(
             method='POST',
             endpoint=endpoint,
             headers={'Authorization': 'Bearer {}'.format(self._token)}
@@ -429,7 +444,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
         endpoint = build_endpoint(resource=resource, key=self._key, method='setModerationStatus' **kwargs)
 
-        result = await self._session.request(
+        result = await self._youtube_session.request(
             method='POST',
             endpoint=endpoint,
             headers={'Authorization': 'Bearer {}'.format(self._token)}
@@ -456,16 +471,17 @@ class YouTubeHybridClient(YouTubeAuthClient, YouTubeClient):
             key type(str): YouTube API key 
             token type(str): Access token
             http_exceptions type(bool): flag turning on or off http specific exceptions
-            session type(aiohttp.ClientSession): async http session from aiohttp library
+            client_session type(aiohttp.ClientSession): async http session from aiohttp library
     """
 
     def __init__(
         self, 
         key: str, 
-        token: str, 
+        token: str,
+        client_session: aiohttp.ClientSession = None,
         http_exceptions: bool = False
     ) -> None:
-        super().__init__(key, token, http_exceptions)
+        super().__init__(key, token, client_session, http_exceptions)
 
     async def list_(
         self, 
