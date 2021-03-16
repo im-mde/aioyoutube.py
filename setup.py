@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 AUTHOR = 'im-mde'
-VERSION = '0.6.0'
+VERSION = '0.7.0'
 DESCRIPTION = 'An asynchronous Python wrapper for the YouTube Data API'
 
 requirements = []
