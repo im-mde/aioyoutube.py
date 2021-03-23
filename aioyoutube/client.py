@@ -192,7 +192,6 @@ class YouTubeAuthClient(YouTubeAPIClient):
         http_exceptions: bool = False
     ) -> classmethod:
 
-        print(cls)
         class_ = cls(key, token, client_session, http_exceptions)
         class_.connect(session=class_._csession)
         return class_
