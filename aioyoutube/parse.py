@@ -32,10 +32,7 @@ from .exceptions import ResourceInvalidException
 
 # takes youtube resource and returns the equivalent url resource
 
-def parse_resource(
-    resource: str, 
-    method: Optional[str] = ''
-) -> str:    
+def parse_resource(resource: str) -> str:    
 
     resource_ = resource
     if 'youtube#' in resource:
@@ -61,12 +58,12 @@ def build_endpoint(
     resource: str, 
     key: str, 
     part: Optional[list] = [], 
-    method: Optional[str] = None, 
+    append: Optional[str] = None, 
     **kwargs
 ) -> str:
     
     resource = parse_resource(resource=resource)    
-    if method != None: resource += '/' + method
+    if append != None: resource += '/' + append
 
     endpoint = '{}?'.format(resource)
 

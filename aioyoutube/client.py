@@ -226,18 +226,20 @@ class YouTubeAuthClient(YouTubeAPIClient):
             await is_http_exception(result[0], data)
         return YouTubeAPIResponse(result[0], data, result[2])
 
+    # optional append argument appends string to end of endpoint to allow non-standard resource endpoints
+    # ex. channelBanners/insert is used instead of channelBanners when using insert function with channelBanners resource
     async def insert(
         self, 
         resource: str, 
         data: dict, 
         media: Optional[bytes] = None, 
         part: Optional[list] = [], 
-        method: Optional[str] = None, 
+        append: Optional[str] = None, 
         **kwargs
     ) -> YouTubeAPIResponse:
         
         endpoint = build_endpoint(resource=resource, key=self._key, 
-            part=part, method=method, **kwargs)
+            part=part, append=append, **kwargs)
         
         if media == None:
             
@@ -285,7 +287,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
             method='PUT', 
             endpoint=endpoint, 
             body=json.dumps(data), 
-            headers={'Authorization': 'Bearer {}'.format(self._token)}
+            headers={'Authorization': ' Bearer {}'.format(self._token)}
         )
 
         data = ast.literal_eval(result[1].decode('UTF8'))
@@ -303,7 +305,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         if rating not in RATINGS:
             raise RatingInvalidException
         
-        endpoint = build_endpoint(resource=resource, key=self._key, method='rate', rating=rating, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, append='rate', rating=rating, **kwargs)
         
         result = await self._youtube_session.request(
             method='POST', 
@@ -315,10 +317,10 @@ class YouTubeAuthClient(YouTubeAPIClient):
         if self._exceptions == True: 
             await is_http_exception(result[0], result[1])
         return YouTubeAPIResponse(result[0], None, result[2])
-
+ 
     async def getRating(self, resource: str, **kwargs) -> YouTubeAPIResponse:
         
-        endpoint = build_endpoint(resource=resource, key=self._key, method='getRating', **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, append='getRating', **kwargs)
 
         result = await self._youtube_session.request(
             method='GET',
@@ -338,7 +340,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         **kwargs
     ) -> YouTubeAPIResponse:
         
-        endpoint = build_endpoint(resource=resource, key=self._key, method='reportAbuse' **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, append='reportAbuse' **kwargs)
 
         result = await self._youtube_session.request(
             method='POST',
@@ -372,7 +374,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         **kwargs
     ) -> YouTubeAPIResponse:
 
-        endpoint = build_endpoint(resource=resource, key=self._key, method='set', **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, append='set', **kwargs)
 
         result = await self._youtube_session.request(
             method='POST',
@@ -390,7 +392,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
     async def unset(self, resource: str, **kwargs) -> YouTubeAPIResponse:
 
-        endpoint = build_endpoint(resource=resource, key=self._key, method='unset', **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, append='unset', **kwargs)
 
         result = await self._youtube_session.request(
             method='POST',
@@ -403,14 +405,16 @@ class YouTubeAuthClient(YouTubeAPIClient):
             await is_http_exception(result[0], result[1])
         return YouTubeAPIResponse(result[0], None, result[2])
 
+    # optional append argument appends string to end of endpoint to allow non-standard resource endpoints
+    # ex captions/[id] is used instead of captions?id=[id] when downloading captions
     async def download(
         self, 
         resource: str, 
-        method: Optional[str] = None,
+        append: Optional[str] = None,
         **kwargs
     ) -> YouTubeAPIResponse:
 
-        endpoint = build_endpoint(resource=resource, key=self._key, method=method, **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, append=append, **kwargs)
 
         result = await self._youtube_session.request(
             method='GET',
@@ -424,7 +428,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
 
     async def markAsSpam(self, resource: str, **kwargs) -> YouTubeAPIResponse:
 
-        endpoint = build_endpoint(resource=resource, key=self._key, method='markAsSpam' **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, append='markAsSpam' **kwargs)
 
         result = await self._youtube_session.request(
             method='POST',
@@ -442,7 +446,7 @@ class YouTubeAuthClient(YouTubeAPIClient):
         **kwargs
     ) -> YouTubeAPIResponse:
 
-        endpoint = build_endpoint(resource=resource, key=self._key, method='setModerationStatus' **kwargs)
+        endpoint = build_endpoint(resource=resource, key=self._key, append='setModerationStatus' **kwargs)
 
         result = await self._youtube_session.request(
             method='POST',
