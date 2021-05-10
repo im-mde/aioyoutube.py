@@ -34,8 +34,8 @@ from aiohttp import ClientSession
 BASE_URL = 'https://www.googleapis.com/youtube/v3/'
 UPLOAD_URL = 'https://www.googleapis.com/upload/youtube/v3/'
 
-
-class YouTubeAPISession():
+# TODO: Add context manager to support case where user wants to directly initialize YouTubeAPISession
+class YouTubeAPISession:
 
     """
         Represents an HTTP client session to the YouTube Data API.
@@ -83,7 +83,6 @@ class YouTubeAPISession():
         else:
             return False
 
-
 class YouTubeAPIResponse:
 
     """
@@ -113,7 +112,7 @@ class YouTubeAPIResponse:
         self._headers = headers
     
     @property
-    def data(self) -> [MutableMapping, bytes]:
+    def data(self) -> Union[MutableMapping, bytes]:
         return self._data
 
     @property
