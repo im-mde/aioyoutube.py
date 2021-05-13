@@ -34,7 +34,6 @@ from aiohttp import ClientSession
 BASE_URL = 'https://www.googleapis.com/youtube/v3/'
 UPLOAD_URL = 'https://www.googleapis.com/upload/youtube/v3/'
 
-# TODO: Add context manager to support case where user wants to directly initialize YouTubeAPISession
 class YouTubeAPISession:
 
     """
@@ -52,6 +51,12 @@ class YouTubeAPISession:
 
     def __init__(self, session: aiohttp.ClientSession = None, **kwargs) -> None:        
         self._session = session or ClientSession(**kwargs)
+
+    async def __aenter__(self):
+        return self
+    
+    async def __aexit__(self):
+        await self.close()
 
     async def _determine_url(self, upload: bool) -> str:
 
