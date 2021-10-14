@@ -1,5 +1,5 @@
 # **aioyoutube**.**py**
-An asynchronous python API wrapper for the YouTube Data API.
+An asynchronous python API wrapper for the YouTube Data API. **Note, this repository and package is now archived. There are no guarantees the code and information is up to date.**
 
 ## Features
 * Full coverage of all functionality in the YouTube Data API [reference guide](https://developers.google.com/youtube/v3/docs).
